@@ -2,7 +2,14 @@
 
 A list of features still outstanding.
 
-## Home Information
+## Repository
+
+- [] Build a proper release workflow
+
+
+## Charts
+
+### Home Information
 
 - [] Embed Valkey as a dependency to make first-install simpler
 - [] Test the HttpRoute config
