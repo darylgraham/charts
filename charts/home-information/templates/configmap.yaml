@@ -1,0 +1,42 @@
+{{ if not .Values.config.existingConfigMap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "home-information.configMapName" . }}
+  labels:
+    {{- include "home-information.labels" . | nindent 4 }}
+data:
+    # Core Django Settings
+    DJANGO_SETTINGS_MODULE: "hi.settings.local"
+    DJANGO_SERVER_PORT: {{ .Values.service.port | quote}}
+
+    # Auth
+    DJANGO_SUPERUSER_EMAIL: {{ .Values.config.auth.adminEmail }}
+
+    # Data Paths
+    HI_DB_PATH: /data/database
+    HI_MEDIA_PATH: /data/media
+
+    # Redis Configuration
+    HI_REDIS_HOST: {{ .Values.config.cache.hostname }}
+    HI_REDIS_PORT: {{ .Values.config.cache.port | quote }}
+    HI_REDIS_KEY_PREFIX: {{ .Values.config.cache.prefix}}
+
+    # Authentication (disabled for simple setup)
+    HI_SUPPRESS_AUTHENTICATION: {{ not .Values.config.auth.enabled | quote }}
+
+    # Email Settings (disabled for simple setup)
+    HI_EMAIL_SUBJECT_PREFIX: {{ .Values.config.email.subjectPrefix | quote }}
+    HI_DEFAULT_FROM_EMAIL: {{ .Values.config.email.fromEmail | quote }}
+    HI_SERVER_EMAIL: {{ .Values.config.email.serverEmail | quote }}
+    HI_EMAIL_HOST: {{ .Values.config.email.serverHost | quote }}
+    HI_EMAIL_PORT: {{ .Values.config.email.serverPort | quote }}
+    HI_EMAIL_USE_TLS: {{ .Values.config.email.useTls | quote }}
+    HI_EMAIL_USE_SSL: {{ .Values.config.email.useSsl | quote }}
+
+    # Network Configuration (for localhost only)
+    HI_EXTRA_HOST_URLS: {{ include "home-information.ingressURLs" . }}
+    HI_EXTRA_CSP_URLS: {{- join " " .Values.config.extraCspUrls -}}
+
+
+{{- end }}

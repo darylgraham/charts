@@ -1,0 +1,52 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile-devcontainer",
+    "context": ".."
+  },
+  "mounts": [
+    "source=${env:HOME}${env:USERPROFILE}/.gitconfig,target=/root/.gitconfig,type=bind,readonly",
+    "source=${env:HOME}${env:USERPROFILE}/.kube,target=/usr/local/share/kube-localhost,type=bind,readonly"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.insertFinalNewline": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+          }
+        },
+        "ruff.lineLength": 120,
+        "prettier.printWidth": 120,
+        "python.defaultInterpreterPath": "python",
+        "python.autoComplete.extraPaths": ["/usr/lib/python3.12/site-packages/"],
+        "python.analysis.extraPaths": ["/usr/lib/python3.12/site-packages/"],
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "files.associations": {
+          "NOTES.txt": "helm"
+        },
+        "[helm]": {
+          "editor.defaultFormatter": "redhat.vscode-yaml"
+          "editor.formatOnSave": true // alternatively, force it to leave you alone
+        }
+      },
+      "extensions": [
+        "ms-python.python", // VSCode support for Python
+        "charliermarsh.ruff", // A formatter for python files
+        "esbenp.prettier-vscode", // JS/TS linting
+        "redhat.vscode-yaml", // yaml linting
+        "Tim-Koehler.helm-intellisense" // helm intellisense
+      ]
+    }
+  },
+  "postCreateCommand": ["make", "init"]
+  //"runArgs": ["--env-file", "${localWorkspaceFolder}/.devcontainer/.env"],
+  //"forwardPorts": [3000, 7007]
+}
+

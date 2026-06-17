@@ -1,0 +1,13 @@
+# Evaluation Example
+#
+# A minimal configuration suitable for evaluating the application with no persistence.
+
+config:
+  auth:
+    enabled: false
+    adminEmail: admin@no-email.com
+  cache:
+    hostname: redis-master
+
+# Access the UI with the following command:
+# kubectl port-forward svc/home-information 8000:8000

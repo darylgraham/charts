@@ -1,0 +1,8 @@
+FROM alpine:3.23
+
+# Install tools and dependencies
+RUN apk add --no-cache python3 py3-pip nano make bash jq yq git kubectl helm curl busybox-extras g++ 
+
+# Install Kubectl 
+RUN echo "k() { kubectl \$@; }" >> /root/.bashrc 
+

@@ -1,0 +1,24 @@
+# Minimal Example
+#
+# A minimal configuration with data persistence and ingress enabled. 
+
+config:
+  auth:
+    adminEmail: admin@example.com
+
+persistence:
+  database:
+    enabled: true
+    size: 2Gi
+  media:
+    enabled: true
+    size: 5Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: home-information.example.com
+      paths:
+        - path: /
+          pathType: Prefix

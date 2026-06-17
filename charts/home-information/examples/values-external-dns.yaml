@@ -1,0 +1,22 @@
+# External DNS example
+#
+# This example shows how to deploy the chart using Traefik as the Ingress controller, 
+# External DNS to provision DNS records, and cert-manager to provision TLS certificates.
+# 
+# This example assumes you have Traefik, External DNS, and cert-manager already installed and configured in your cluster.
+
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations: 
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    external-dns.alpha.kubernetes.io/hostname: home-information.example.com
+  hosts:
+    - host: home-information.example.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: 
+   - secretName: home-information-secret-tls
+     hosts:
+       - home-information.example.com

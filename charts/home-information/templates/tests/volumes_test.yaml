@@ -1,0 +1,255 @@
+suite: persistence volumes
+templates:
+  - templates/deployment.yaml
+  - templates/pvc.yaml
+
+tests:
+  # --- volumeMounts are always present ---
+
+  - it: always mounts database and media paths
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: database
+            mountPath: /data/database
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: media
+            mountPath: /data/media
+
+  # --- default: both volumes are emptyDir ---
+
+  - it: uses emptyDir for database when persistence is disabled
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: database
+            emptyDir: {}
+
+  - it: uses emptyDir for media when persistence is disabled
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: media
+            emptyDir: {}
+
+  # --- database persistence enabled ---
+
+  - it: uses a PVC for database when persistence is enabled
+    template: templates/deployment.yaml
+    set:
+      persistence.database.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: database
+            persistentVolumeClaim:
+              claimName: RELEASE-NAME-home-information-database
+
+  - it: keeps emptyDir for media when only database persistence is enabled
+    template: templates/deployment.yaml
+    set:
+      persistence.database.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: media
+            emptyDir: {}
+
+  # --- media persistence enabled ---
+
+  - it: uses a PVC for media when persistence is enabled
+    template: templates/deployment.yaml
+    set:
+      persistence.media.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: media
+            persistentVolumeClaim:
+              claimName: RELEASE-NAME-home-information-media
+
+  - it: keeps emptyDir for database when only media persistence is enabled
+    template: templates/deployment.yaml
+    set:
+      persistence.media.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: database
+            emptyDir: {}
+
+  # --- both persistence enabled ---
+
+  - it: uses PVCs for both volumes when both are enabled
+    template: templates/deployment.yaml
+    set:
+      persistence.database.enabled: true
+      persistence.media.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: database
+            persistentVolumeClaim:
+              claimName: RELEASE-NAME-home-information-database
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: media
+            persistentVolumeClaim:
+              claimName: RELEASE-NAME-home-information-media
+
+  # --- existingClaim ---
+
+  - it: uses existingClaim name for database when set
+    template: templates/deployment.yaml
+    set:
+      persistence.database.enabled: true
+      persistence.database.existingClaim: my-db-pvc
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: database
+            persistentVolumeClaim:
+              claimName: my-db-pvc
+
+  - it: uses existingClaim name for media when set
+    template: templates/deployment.yaml
+    set:
+      persistence.media.enabled: true
+      persistence.media.existingClaim: my-media-pvc
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: media
+            persistentVolumeClaim:
+              claimName: my-media-pvc
+
+  # --- PVC creation ---
+
+  - it: creates no PVCs when persistence is disabled
+    template: templates/pvc.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: creates a database PVC when persistence is enabled
+    template: templates/pvc.yaml
+    set:
+      persistence.database.enabled: true
+    asserts:
+      - containsDocument:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          name: RELEASE-NAME-home-information-database
+
+  - it: creates a media PVC when persistence is enabled
+    template: templates/pvc.yaml
+    set:
+      persistence.media.enabled: true
+    asserts:
+      - containsDocument:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          name: RELEASE-NAME-home-information-media
+
+  - it: creates both PVCs when both are enabled
+    template: templates/pvc.yaml
+    set:
+      persistence.database.enabled: true
+      persistence.media.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: does not create a database PVC when existingClaim is set
+    template: templates/pvc.yaml
+    set:
+      persistence.database.enabled: true
+      persistence.database.existingClaim: my-db-pvc
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: does not create a media PVC when existingClaim is set
+    template: templates/pvc.yaml
+    set:
+      persistence.media.enabled: true
+      persistence.media.existingClaim: my-media-pvc
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # --- PVC spec ---
+
+  - it: sets the database PVC storage size
+    template: templates/pvc.yaml
+    set:
+      persistence.database.enabled: true
+      persistence.database.size: 5Gi
+    asserts:
+      - equal:
+          path: spec.resources.requests.storage
+          value: 5Gi
+
+  - it: sets the media PVC storage size
+    template: templates/pvc.yaml
+    set:
+      persistence.media.enabled: true
+      persistence.media.size: 10Gi
+    asserts:
+      - equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+
+  - it: sets the database PVC storageClass
+    template: templates/pvc.yaml
+    set:
+      persistence.database.enabled: true
+      persistence.database.storageClass: fast-ssd
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: fast-ssd
+
+  - it: sets the media PVC storageClass
+    template: templates/pvc.yaml
+    set:
+      persistence.media.enabled: true
+      persistence.media.storageClass: bulk-hdd
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: bulk-hdd
+
+  - it: omits storageClass when not set
+    template: templates/pvc.yaml
+    set:
+      persistence.database.enabled: true
+    asserts:
+      - notExists:
+          path: spec.storageClassName
+
+  - it: sets the database PVC accessMode
+    template: templates/pvc.yaml
+    set:
+      persistence.database.enabled: true
+      persistence.database.accessMode: ReadWriteMany
+    asserts:
+      - contains:
+          path: spec.accessModes
+          content: ReadWriteMany
