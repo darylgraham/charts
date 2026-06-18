@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   release:
@@ -20,6 +21,31 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Sync Chart versions from CHANGELOGs
+        run: |
+          changed=false
+          for chart_dir in charts/*/; do
+            chart_name=$(basename "$chart_dir")
+            changelog="${chart_dir}CHANGELOG.md"
+            chart_yaml="${chart_dir}Chart.yaml"
+            if [ ! -f "$changelog" ]; then
+              echo "$chart_name: no CHANGELOG.md, skipping"
+              continue
+            fi
+            CHANGELOG_VERSION=$(grep -m1 '^## \[[0-9]' "$changelog" | sed 's/## \[\([^]]*\)\].*/\1/')
+            CHART_VERSION=$(grep '^version:' "$chart_yaml" | awk '{print $2}')
+            echo "$chart_name: CHANGELOG=$CHANGELOG_VERSION  Chart.yaml=$CHART_VERSION"
+            if [ "$CHANGELOG_VERSION" != "$CHART_VERSION" ]; then
+              sed -i "s/^version:.*/version: $CHANGELOG_VERSION/" "$chart_yaml"
+              git add "$chart_yaml"
+              git commit -m "chore($chart_name): bump version to $CHANGELOG_VERSION [skip ci]"
+              changed=true
+            fi
+          done
+          if [ "$changed" = true ]; then
+            git push
+          fi
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.7.0
