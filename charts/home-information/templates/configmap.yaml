@@ -36,7 +36,7 @@ data:
 
     # Network Configuration (for localhost only)
     HI_EXTRA_HOST_URLS: {{ include "home-information.ingressURLs" . }}
-    HI_EXTRA_CSP_URLS: {{- join " " .Values.config.extraCspUrls -}}
+    HI_EXTRA_CSP_URLS: {{ join " " .Values.config.extraCspUrls | quote }}
 
 
 {{- end }}

@@ -1,0 +1,50 @@
+# Flux Minimal example
+#
+# This example shows how to deploy the minimal example via Flux.
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: home-information
+  namespace: home-information
+spec:
+  interval: 24h
+  url: https://darylgraham.github.io/charts
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: home-information
+  namespace: home-information
+spec:
+  chart:
+    spec:
+      chart: home-information
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: home-information
+      version: 0.1.1
+      interval: 24h
+  interval: 10m0s
+  values:
+    config:
+      auth:
+        adminEmail: admin@example.com
+    persistence:
+      database:
+        enabled: true
+        size: 2Gi
+      media:
+        enabled: true
+        size: 5Gi
+    ingress:
+      enabled: true
+      className: nginx
+      hosts:
+        - host: home-information.example.com
+          paths:
+            - path: /
+              pathType: Prefix
