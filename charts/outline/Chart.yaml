@@ -1,0 +1,40 @@
+apiVersion: v2
+name: outline
+description: The outline helm chart to deploy outline in kubernetes clusters.
+version: 1.10.0
+appVersion: 0.84.0
+home: https://getoutline.com
+sources:
+  - https://github.com/lrstanley/helm-charts
+keywords:
+  - outline
+  - wiki
+  - helm
+  - chart
+  - kubernetes
+  - s3
+  - minio
+  - postgresql
+  - mongodb
+  - knowledge
+maintainers:
+  - name: lrstanley
+    email: liam@liam.sh
+    url: https://liam.sh
+dependencies:
+  - name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 16.7.4
+    condition: postgresql.enabled
+  - name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: 21.1.6
+    condition: redis.enabled
+  - name: minio
+    repository: https://charts.bitnami.com/bitnami
+    version: 16.0.10
+    condition: minio.enabled
+  - name: dex
+    repository: https://charts.dexidp.io
+    version: 0.23.0
+    condition: dex.enabled

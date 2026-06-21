@@ -8,3 +8,6 @@ helm-unittest:
 
 test:
 	helm unittest ./charts/** -f templates/tests/*.yaml
+
+lint:
+	helm lint ./charts/**
