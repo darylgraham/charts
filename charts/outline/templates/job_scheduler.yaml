@@ -1,4 +1,10 @@
 {{- if .Values.scheduler.enabled }}
+  {{- $cronUrl := "" }}
+  {{- if .Values.scheduler.useIngress }}
+    {{- $cronUrl = printf "%s/api/cron.daily?token=${UTILS_SECRET}" (include "outline.url" . | trimSuffix "/") | quote }}
+  {{- else }}
+    {{- $cronUrl = printf "http://%s:%0.f/api/cron.daily?token=${UTILS_SECRET}" (include "outline.fullname" .) .Values.service.port | quote }}
+  {{- end }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -27,11 +33,7 @@ spec:
                     wget -S \
                       -O /dev/null \
                       --no-check-certificate \
-  {{- if .Values.scheduler.useIngress }}
-    {{ printf "%s/api/cron.daily?token=${UTILS_SECRET}" (include "outline.url" . | trimSuffix "/") | quote }} 2>&1 \
-  {{- else }}
-    {{ printf "http://%s:%0.f/api/cron.daily?token=${UTILS_SECRET}" (include "outline.fullname" .) .Values.service.port | quote }} 2>&1 \
-  {{- end }}
+                      {{ $cronUrl }} 2>&1 \
                     | sed -rn 's:.*HTTP/.* ([0-9]+) .*:\1:p' | tail -1
                   )
 
