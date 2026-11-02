@@ -22,7 +22,7 @@
 - [ ] 4.1 Write the chart `README.md`: values table, auth modes, Proxmox `PVEAuditor` role setup, TLS/CA limits, ServiceMonitor, and a plain-Prometheus `scrape_configs` example with `__param_target` relabeling; verify the example matches the monitoring spec scenario and every `values.yaml` key is documented
 - [ ] 4.2 Add the chart to the root `README.md` table; verify the row links to the chart README
 - [ ] 4.3 Run `make gates` and fix findings within this chart (format failures on the other charts predate this change and are out of scope); verify `LINT_EXIT:0`, `TEST_EXIT:0`, `FORMAT_EXIT` for `charts/prometheus-pve-exporter` alone via `helmfmt --check charts/prometheus-pve-exporter` printing no unformatted files, and `VALIDATE_EXIT:0`
-- [ ] 4.4 Human verification: install on a real cluster against a Proxmox VE host, confirm the pod starts under the read-only root filesystem and `curl 'http://<svc>:9221/pve?target=<host>&module=default&cluster=1&node=1'` returns metrics; wait for Product Owner confirmation before ticking
+- [ ] 4.4 Human verification: install on a real cluster against a Proxmox VE host, confirm the pod starts under the read-only root filesystem and reaches Ready with no liveness restarts (proving the `/` probe path returns 2xx; if not, switch probes to `tcpSocket`), confirm it also starts with `extraArgs: [--no-collector.config]`, and `curl 'http://<svc>:9221/pve?target=<host>&module=default&cluster=1&node=1'` returns metrics; wait for Product Owner confirmation before ticking
 
 ## Workflow follow-up
 

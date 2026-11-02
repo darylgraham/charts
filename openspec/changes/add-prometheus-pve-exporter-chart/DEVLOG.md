@@ -68,9 +68,11 @@ New Helm chart `charts/prometheus-pve-exporter` deploying prometheus-pve-exporte
 
 - **[architect]** Gates for remediation `6cc0ac5` (run by me): `LINT_EXIT:0`, `TEST_EXIT:0`, `VALIDATE_EXIT:0`, `FORMAT_EXIT:1` (baseline `home-information`/`outline` only; `helmfmt --check charts/prometheus-pve-exporter` clean). Section 1 closed on supervisor `Approve` (round 2).
 
+- **[architect]** Product Owner approved amending 4.4 (Ready with no liveness restarts; starts with `extraArgs: [--no-collector.config]`). `tasks.md` 4.4 updated; the NEXT item below is resolved.
+
 ## NEXT
 
-- **Up next:** section 2 (credentials and configuration), base = HEAD after this commit. Waiting on Product Owner for the 4.4 wording below.
+- **Up next:** section 2 (credentials and configuration), base = HEAD after this commit. 4.4 wording settled.
 - **Open questions (Product Owner):** probe path `/` is unverified (decision 8) and task 1.2's "confirm probe path" clause was ticked as the known open item — propose changing 4.4 to "pod reaches Ready with no liveness restarts" (proves `/` is 2xx; fallback to `tcpSocket` touches only values/tests). Also add to 4.4: pod starts with `extraArgs: [--no-collector.config]`.
 - **Parked:** `extraArgs` renders as container `args`, replacing the image CMD — settle before 2.3 adds `--config.file` for pve.yml mode; extend CHANGELOG `[0.1.0]` (not `[Unreleased]`) in later sections; `/tmp` emptyDir when volumes land (2.3); chart `icon`; Secret checksum annotation (2.1); document `serviceAccount.automount: false` (4.1); CI `ci.yml` does not fetch deps (flagged to PO).
 - **Carry-forward:** `make format` fails on `home-information` and `outline` (baseline debt, out of scope).
