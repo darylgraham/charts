@@ -1,12 +1,17 @@
 suite: deployment
 templates:
   - templates/deployment.yaml
+  - templates/secret.yaml
 release:
   name: pve
   namespace: monitoring
+set:
+  pve.user: monitoring@pve
+  pve.password: pw-placeholder
 
 tests:
   - it: renders a Deployment named after the release
+    template: templates/deployment.yaml
     asserts:
       - isKind:
           of: Deployment
@@ -18,12 +23,14 @@ tests:
           value: 1
 
   - it: defaults the image tag to appVersion without a v prefix
+    template: templates/deployment.yaml
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
           value: prompve/prometheus-pve-exporter:3.11.0
 
   - it: uses image.tag when set
+    template: templates/deployment.yaml
     set:
       image.tag: "3.10.0"
     asserts:
@@ -32,6 +39,7 @@ tests:
           value: prompve/prometheus-pve-exporter:3.10.0
 
   - it: exposes the named http port 9221
+    template: templates/deployment.yaml
     asserts:
       - contains:
           path: spec.template.spec.containers[0].ports
@@ -41,6 +49,7 @@ tests:
             protocol: TCP
 
   - it: keeps the container port and probes on 9221 when service.port is overridden
+    template: templates/deployment.yaml
     set:
       service.port: 9300
     asserts:
@@ -55,6 +64,7 @@ tests:
           value: http
 
   - it: hardens the pod by default
+    template: templates/deployment.yaml
     asserts:
       - equal:
           path: spec.template.spec.securityContext
@@ -67,6 +77,7 @@ tests:
               type: RuntimeDefault
 
   - it: hardens the container by default
+    template: templates/deployment.yaml
     asserts:
       - equal:
           path: spec.template.spec.containers[0].securityContext
@@ -78,6 +89,7 @@ tests:
                 - ALL
 
   - it: defines http liveness and readiness probes on the named port
+    template: templates/deployment.yaml
     asserts:
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet
@@ -91,11 +103,13 @@ tests:
             port: http
 
   - it: omits args by default
+    template: templates/deployment.yaml
     asserts:
       - notExists:
           path: spec.template.spec.containers[0].args
 
   - it: passes extraArgs as container args
+    template: templates/deployment.yaml
     set:
       extraArgs:
         - --no-collector.config
@@ -106,6 +120,7 @@ tests:
             - --no-collector.config
 
   - it: applies resources, scheduling, pull secrets, annotations and labels
+    template: templates/deployment.yaml
     set:
       resources:
         limits:
@@ -147,6 +162,7 @@ tests:
           value: infra
 
   - it: honours nameOverride and fullnameOverride
+    template: templates/deployment.yaml
     set:
       fullnameOverride: custom
     asserts:
@@ -158,6 +174,7 @@ tests:
           value: prometheus-pve-exporter
 
   - it: honours nameOverride in the fullname and selector
+    template: templates/deployment.yaml
     set:
       nameOverride: pvex
     asserts:
@@ -169,12 +186,14 @@ tests:
           value: pvex
 
   - it: uses the generated service account by default
+    template: templates/deployment.yaml
     asserts:
       - equal:
           path: spec.template.spec.serviceAccountName
           value: pve-prometheus-pve-exporter
 
   - it: uses the default service account when creation is disabled
+    template: templates/deployment.yaml
     set:
       serviceAccount.create: false
     asserts:

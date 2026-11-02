@@ -9,3 +9,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.1.0] - 2026-11-02
 ### Added
 - Initial release: Deployment, Service and ServiceAccount for prometheus-pve-exporter v3.11.0 with hardened defaults and HTTP probes
+- Credentials from a chart-managed or existing Secret as `PVE_*` environment variables (password or API token), with `pve.verifySsl` and render-time validation

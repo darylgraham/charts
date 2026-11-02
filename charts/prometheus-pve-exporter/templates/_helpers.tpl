@@ -60,3 +60,41 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
   {{- end }}
 {{- end }}
+
+{{/*
+Name of the Secret holding the Proxmox credentials.
+*/}}
+{{- define "prometheus-pve-exporter.secretName" -}}
+{{- default (include "prometheus-pve-exporter.fullname" .) .Values.pve.existingSecret }}
+{{- end }}
+
+{{/*
+Renders "true" when token authentication is selected: pve.tokenName is set, or a token key name is configured for an existing Secret.
+*/}}
+{{- define "prometheus-pve-exporter.tokenAuth" -}}
+  {{- if or .Values.pve.tokenName .Values.pve.tokenNameKey .Values.pve.tokenValueKey }}true{{- end }}
+{{- end }}
+
+{{/*
+Fail the render on invalid credential configuration.
+*/}}
+{{- define "prometheus-pve-exporter.validate" -}}
+  {{- $token := include "prometheus-pve-exporter.tokenAuth" . }}
+  {{- if and $token .Values.pve.password }}
+    {{- fail "pve.password cannot be combined with token authentication (pve.tokenName, pve.tokenNameKey or pve.tokenValueKey); set only one" }}
+  {{- end }}
+  {{- if not .Values.pve.existingSecret }}
+    {{- if not .Values.pve.user }}
+      {{- fail "pve.user is required unless pve.existingSecret is set" }}
+    {{- end }}
+    {{- if and $token (not .Values.pve.tokenName) }}
+      {{- fail "pve.tokenName is required for token authentication" }}
+    {{- end }}
+    {{- if and $token (not .Values.pve.tokenValue) }}
+      {{- fail "pve.tokenValue is required for token authentication" }}
+    {{- end }}
+    {{- if and (not $token) (not .Values.pve.password) }}
+      {{- fail "pve.password (or pve.tokenName and pve.tokenValue) is required unless pve.existingSecret is set" }}
+    {{- end }}
+  {{- end }}
+{{- end }}

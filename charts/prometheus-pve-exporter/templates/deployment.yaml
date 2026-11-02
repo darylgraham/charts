@@ -1,3 +1,4 @@
+{{- include "prometheus-pve-exporter.validate" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -11,9 +12,14 @@ spec:
       {{- include "prometheus-pve-exporter.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-{{- with .Values.podAnnotations }}
+{{- if or .Values.podAnnotations (not .Values.pve.existingSecret) }}
       annotations:
+  {{- if not .Values.pve.existingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+  {{- end }}
+  {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+  {{- end }}
 {{- end }}
       labels:
         {{- include "prometheus-pve-exporter.labels" . | nindent 8 }}
@@ -42,6 +48,32 @@ spec:
           args:
             {{- toYaml . | nindent 12 }}
 {{- end }}
+          env:
+            - name: PVE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ .Values.pve.userKey }}
+{{- if include "prometheus-pve-exporter.tokenAuth" . }}
+            - name: PVE_TOKEN_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ default "tokenName" .Values.pve.tokenNameKey }}
+            - name: PVE_TOKEN_VALUE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ default "tokenValue" .Values.pve.tokenValueKey }}
+{{- else }}
+            - name: PVE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ .Values.pve.passwordKey }}
+{{- end }}
+            - name: PVE_VERIFY_SSL
+              value: {{ .Values.pve.verifySsl | quote }}
           ports:
             - name: http
               containerPort: 9221

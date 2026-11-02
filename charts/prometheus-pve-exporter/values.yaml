@@ -56,6 +56,31 @@ service:
   # Service port only; the exporter always listens on 9221 (the named "http" container port).
   port: 9221
 
+pve:
+  # Proxmox VE user, e.g. "monitoring@pve" (exported as PVE_USER). Required unless existingSecret is set.
+  user: ""
+  # Password for password authentication. Cannot be combined with token authentication.
+  password: ""
+  # API token name for token authentication, e.g. "exporter" (PVE_TOKEN_NAME). Setting it selects token mode.
+  tokenName: ""
+  # API token value (PVE_TOKEN_VALUE). Required with tokenName.
+  tokenValue: ""
+  # Verify the Proxmox server certificate (PVE_VERIFY_SSL). A custom CA is only supported with a mounted pve.yml.
+  verifySsl: true
+  # Name of an existing Secret holding the credentials; when set, the chart creates no Secret and
+  # user, password, tokenName and tokenValue above are ignored (except that a password combined
+  # with token mode is still rejected).
+  existingSecret: ""
+  # Key of the user in the Secret (chart-managed or existing).
+  userKey: user
+  # Key of the password in the Secret. Used in password mode (the default mode).
+  passwordKey: password
+  # Key of the token name in the Secret. With existingSecret, setting this or tokenValueKey selects
+  # token mode (otherwise "tokenName" is used when tokenName is set).
+  tokenNameKey: ""
+  # Key of the token value in the Secret; falls back to "tokenValue" when token mode is selected.
+  tokenValueKey: ""
+
 # Container resource requests and limits.
 resources: {}
 
