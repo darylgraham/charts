@@ -16,20 +16,32 @@ SHELL := /bin/bash
 
 CHANGES := $(notdir $(patsubst %/,%,$(filter-out %/archive/,$(wildcard openspec/changes/*/))))
 
-.PHONY: init helm-unittest test lint format validate changes gates
+.PHONY: init helm-unittest deps test lint format validate changes gates
 
 init: helm-unittest
 	echo "Container initialised..."
 
-helm-unittest:
+helm-unittest: deps
 	helm plugin install https://github.com/helm-unittest/helm-unittest.git
 
 # --- helm ----------------------------------------------------------------------
 
+# Charts with subchart dependencies (outline) only lint/template once those are fetched;
+# without them, values such as redis.master.service.ports are missing and templates error.
+# Idempotent; `helm dependency build` honours Chart.lock.
+deps:
+	@for c in charts/*/; do \
+	  grep -q '^dependencies:' $$c/Chart.yaml || continue; \
+	  grep -E '^[[:space:]]+repository: https?://' $$c/Chart.yaml | awk '{print $$2}' | sort -u | \
+	    while read -r url; do helm repo add "$$(echo $$url | sed -E 's#https?://##; s#[^A-Za-z0-9]+#-#g')" "$$url" --force-update >/dev/null; done; \
+	  helm dependency build $$c >/dev/null || exit 1; \
+	done
+
+
 test:
 	@helm unittest ./charts/** -f templates/tests/*.yaml; code=$$?; echo "TEST_EXIT:$$code"; exit $$code
 
-lint:
+lint: deps
 	@helm lint ./charts/**; code=$$?; echo "LINT_EXIT:$$code"; exit $$code
 
 # helmfmt checks one chart at a time, so loop. A check, never a rewrite.
