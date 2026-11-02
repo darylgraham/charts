@@ -102,6 +102,38 @@ tls:
   # Directory the CA Secret is mounted at.
   caMountPath: /etc/prometheus/ca
 
+serviceMonitor:
+  # Render a Prometheus Operator ServiceMonitor (requires the monitoring.coreos.com CRDs).
+  enabled: false
+  # Namespace of the ServiceMonitor. Defaults to the release namespace.
+  namespace: ""
+  # Extra labels, e.g. `release: prometheus` so the Operator selects it.
+  labels: {}
+  # Annotations added to the ServiceMonitor.
+  annotations: {}
+  # Scrape interval.
+  interval: 30s
+  # Scrape timeout; must not exceed the interval.
+  scrapeTimeout: 10s
+  # Query parameters sent to /pve on every scrape. Always sent explicitly, as strings.
+  params:
+    # Module from pve.yml to use.
+    module: default
+    # Collect cluster metrics ("1" or "0").
+    cluster: "1"
+    # Collect node metrics ("1" or "0").
+    node: "1"
+  # Proxmox VE hosts to scrape through this exporter; each one renders one endpoint with its own
+  # `target` parameter and an `instance` label set to the target. An entry is either a host string
+  # or a map { target, module, cluster, node } whose optional keys override `params` for that
+  # endpoint. With no targets, one endpoint is rendered without a `target` parameter or `instance`
+  # relabeling (exporter running on the Proxmox VE host itself).
+  targets: []
+  # Extra relabelings appended to every endpoint after the chart's own.
+  relabelings: []
+  # Metric relabelings applied to every endpoint.
+  metricRelabelings: []
+
 # Container resource requests and limits.
 resources: {}
 

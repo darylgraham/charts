@@ -1,0 +1,313 @@
+suite: servicemonitor
+templates:
+  - templates/servicemonitor.yaml
+release:
+  name: pve
+  namespace: monitoring
+set:
+  pve.user: monitoring@pve
+  pve.password: placeholder
+
+tests:
+  - it: renders nothing by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders a ServiceMonitor scraping /pve on the http port
+    set:
+      serviceMonitor.enabled: true
+    asserts:
+      - isKind:
+          of: ServiceMonitor
+      - isAPIVersion:
+          of: monitoring.coreos.com/v1
+      - equal:
+          path: metadata.name
+          value: pve-prometheus-pve-exporter
+      - equal:
+          path: metadata.namespace
+          value: monitoring
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: prometheus-pve-exporter
+            app.kubernetes.io/instance: pve
+      - equal:
+          path: spec.namespaceSelector.matchNames
+          value:
+            - monitoring
+      - equal:
+          path: spec.endpoints[0].port
+          value: http
+      - equal:
+          path: spec.endpoints[0].path
+          value: /pve
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 30s
+      - equal:
+          path: spec.endpoints[0].scrapeTimeout
+          value: 10s
+
+  - it: renders a single endpoint without target or instance relabeling when no targets are set
+    set:
+      serviceMonitor.enabled: true
+    asserts:
+      - lengthEqual:
+          path: spec.endpoints
+          count: 1
+      - equal:
+          path: spec.endpoints[0].params
+          value:
+            module:
+              - default
+            cluster:
+              - "1"
+            node:
+              - "1"
+      - notExists:
+          path: spec.endpoints[0].params.target
+      - notExists:
+          path: spec.endpoints[0].relabelings
+
+  - it: renders one endpoint per target with its own target param and instance relabeling
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - pve1.example.com
+        - pve2.example.com
+    asserts:
+      - lengthEqual:
+          path: spec.endpoints
+          count: 2
+      - equal:
+          path: spec.endpoints[0].params.target
+          value:
+            - pve1.example.com
+      - equal:
+          path: spec.endpoints[1].params.target
+          value:
+            - pve2.example.com
+      - equal:
+          path: spec.endpoints[0].relabelings
+          value:
+            - sourceLabels:
+                - __param_target
+              targetLabel: instance
+      - equal:
+          path: spec.endpoints[1].relabelings
+          value:
+            - sourceLabels:
+                - __param_target
+              targetLabel: instance
+      - equal:
+          path: spec.endpoints[1].params.module
+          value:
+            - default
+
+  - it: lets a target map override module, cluster and node for that endpoint only
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - pve1.example.com
+        - target: pve2.example.com
+          module: other
+          cluster: "0"
+          node: "0"
+    asserts:
+      - equal:
+          path: spec.endpoints[0].params
+          value:
+            module:
+              - default
+            cluster:
+              - "1"
+            node:
+              - "1"
+            target:
+              - pve1.example.com
+      - equal:
+          path: spec.endpoints[1].params
+          value:
+            module:
+              - other
+            cluster:
+              - "0"
+            node:
+              - "0"
+            target:
+              - pve2.example.com
+
+  - it: sends the configured cluster and node parameters
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.params.cluster: "0"
+      serviceMonitor.params.node: "1"
+      serviceMonitor.params.module: lab
+      serviceMonitor.targets:
+        - pve1.example.com
+    asserts:
+      - equal:
+          path: spec.endpoints[0].params.cluster
+          value:
+            - "0"
+      - equal:
+          path: spec.endpoints[0].params.node
+          value:
+            - "1"
+      - equal:
+          path: spec.endpoints[0].params.module
+          value:
+            - lab
+
+  - it: passes custom labels and annotations through
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.labels:
+        release: prometheus
+      serviceMonitor.annotations:
+        a: b
+    asserts:
+      - equal:
+          path: metadata.labels.release
+          value: prometheus
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: prometheus-pve-exporter
+      - equal:
+          path: metadata.annotations.a
+          value: b
+
+  - it: honours namespace, interval and scrape timeout
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.namespace: prometheus
+      serviceMonitor.interval: 1m
+      serviceMonitor.scrapeTimeout: 45s
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: prometheus
+      - equal:
+          path: spec.namespaceSelector.matchNames
+          value:
+            - monitoring
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 1m
+      - equal:
+          path: spec.endpoints[0].scrapeTimeout
+          value: 45s
+
+  - it: appends extra relabelings after the instance relabeling and renders metricRelabelings
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - pve1.example.com
+      serviceMonitor.relabelings:
+        - action: replace
+          targetLabel: site
+          replacement: lab
+      serviceMonitor.metricRelabelings:
+        - action: drop
+          sourceLabels:
+            - __name__
+          regex: pve_guest_info
+    asserts:
+      - equal:
+          path: spec.endpoints[0].relabelings
+          value:
+            - sourceLabels:
+                - __param_target
+              targetLabel: instance
+            - action: replace
+              targetLabel: site
+              replacement: lab
+      - equal:
+          path: spec.endpoints[0].metricRelabelings
+          value:
+            - action: drop
+              sourceLabels:
+                - __name__
+              regex: pve_guest_info
+
+  - it: renders only user relabelings when no targets are set
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.relabelings:
+        - action: replace
+          targetLabel: site
+          replacement: lab
+    asserts:
+      - equal:
+          path: spec.endpoints[0].relabelings
+          value:
+            - action: replace
+              targetLabel: site
+              replacement: lab
+
+  - it: honours integer zero overrides in a target map
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - target: pve1.example.com
+          cluster: 0
+          node: 0
+    asserts:
+      - equal:
+          path: spec.endpoints[0].params.cluster
+          value:
+            - "0"
+      - equal:
+          path: spec.endpoints[0].params.node
+          value:
+            - "0"
+
+  - it: renders integer zero global params as strings
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.params.cluster: 0
+      serviceMonitor.params.node: 0
+    asserts:
+      - equal:
+          path: spec.endpoints[0].params.cluster
+          value:
+            - "0"
+      - equal:
+          path: spec.endpoints[0].params.node
+          value:
+            - "0"
+
+  - it: falls back to the global params when a target override is null
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.params.cluster: "0"
+      serviceMonitor.targets:
+        - target: pve1.example.com
+          cluster: null
+          module: null
+          node: 0
+    asserts:
+      - equal:
+          path: spec.endpoints[0].params.cluster
+          value:
+            - "0"
+      - equal:
+          path: spec.endpoints[0].params.module
+          value:
+            - default
+      - equal:
+          path: spec.endpoints[0].params.node
+          value:
+            - "0"
+
+  - it: fails when a target map has no target key
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - pve1.example.com
+        - cluster: "0"
+    asserts:
+      - failedTemplate:
+          errorMessage: "serviceMonitor.targets[1]: map entries need a `target` key"

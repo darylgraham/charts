@@ -1,0 +1,62 @@
+{{- if .Values.serviceMonitor.enabled }}
+  {{- $sm := .Values.serviceMonitor }}
+  {{- $targets := $sm.targets | default (list "") }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "prometheus-pve-exporter.fullname" . }}
+  namespace: {{ default .Release.Namespace $sm.namespace }}
+  labels:
+    {{- include "prometheus-pve-exporter.labels" . | nindent 4 }}
+  {{- with $sm.labels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $sm.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "prometheus-pve-exporter.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+  {{- range $i, $e := $targets }}
+    {{- $t := ternary $e (dict "target" $e) (kindIs "map" $e) }}
+    {{- if and (kindIs "map" $e) (not $t.target) }}
+      {{- fail (printf "serviceMonitor.targets[%d]: map entries need a `target` key" $i) }}
+    {{- end }}
+    - port: http
+      path: /pve
+      interval: {{ $sm.interval }}
+      scrapeTimeout: {{ $sm.scrapeTimeout }}
+      params:
+        module:
+          - {{ ternary $sm.params.module (index $t "module") (kindIs "invalid" (index $t "module")) | toString | quote }}
+        cluster:
+          - {{ ternary $sm.params.cluster (index $t "cluster") (kindIs "invalid" (index $t "cluster")) | toString | quote }}
+        node:
+          - {{ ternary $sm.params.node (index $t "node") (kindIs "invalid" (index $t "node")) | toString | quote }}
+    {{- if $t.target }}
+        target:
+          - {{ $t.target | quote }}
+    {{- end }}
+    {{- if or $t.target $sm.relabelings }}
+      relabelings:
+      {{- if $t.target }}
+        - sourceLabels:
+            - __param_target
+          targetLabel: instance
+      {{- end }}
+      {{- with $sm.relabelings }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- with $sm.metricRelabelings }}
+      metricRelabelings:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+  {{- end }}
+{{- end }}

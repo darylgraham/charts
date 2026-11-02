@@ -12,3 +12,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Credentials from a chart-managed or existing Secret as `PVE_*` environment variables (password or API token), with `pve.verifySsl` and render-time validation
 - Mounted `pve.yml` mode (`config.pveYml` or `config.existingSecret`) with no `PVE_*` variables, an optional CA Secret mount (`tls.caSecret`) and a writable `/tmp` emptyDir
 - Example values files in `examples/` (password, token, existing Secret, multi-module `pve.yml` with a custom CA)
+- Optional Prometheus Operator `ServiceMonitor` (`serviceMonitor.*`) scraping `/pve`, with `module`/`cluster`/`node` parameters, multi-target endpoints that set the `instance` label, and custom labels, interval, scrape timeout and namespace

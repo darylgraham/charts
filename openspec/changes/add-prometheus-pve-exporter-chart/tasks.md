@@ -15,7 +15,7 @@
 
 ## 3. Prometheus integration
 
-- [ ] 3.1 Add `servicemonitor.yaml` (off by default; targets, params, relabeling to `instance`, labels, interval, scrapeTimeout, namespace); verify helm-unittest cases for default-off, enabled, multiple targets, parameter overrides, and label passthrough (`TEST_EXIT:0`)
+- [x] 3.1 Add `servicemonitor.yaml` (off by default; targets, params, relabeling to `instance`, labels, interval, scrapeTimeout, namespace); verify helm-unittest cases for default-off, enabled, multiple targets, parameter overrides, and label passthrough (`TEST_EXIT:0`)
 
 ## 4. Documentation, repo registration, and release
 
