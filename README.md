@@ -16,6 +16,7 @@ helm repo update
 | Chart | Description | Version |
 |-------|-------------|---------|
 | [home-information](charts/home-information/README.md) | Helm chart for deploying Home Information on Kubernetes | 0.1.0 |
+| [prometheus-pve-exporter](charts/prometheus-pve-exporter/README.md) | Helm chart for deploying prometheus-pve-exporter, a Prometheus exporter for Proxmox VE | 0.1.0 |
 
 ## Development
 
