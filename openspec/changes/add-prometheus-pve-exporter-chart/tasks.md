@@ -10,7 +10,7 @@
 
 - [x] 2.1 Add `secret.yaml` and env wiring for password and token auth with `PVE_VERIFY_SSL`, plus render-time `fail` validation (no credentials, password+token, env+file); verify with helm-unittest cases for each scenario in `pve-exporter-deployment` (`TEST_EXIT:0`)
 - [x] 2.2 Add existing-Secret support with configurable key names; verify no Secret is rendered and env refs use the configured keys
-- [ ] 2.3 Add mounted `pve.yml` mode (inline or existing Secret) mounted at `/etc/prometheus/pve.yml` with no `PVE_*` credential vars, plus optional CA Secret mount; verify with unit tests, including that no credential value appears outside Secret objects
+- [x] 2.3 Add mounted `pve.yml` mode (inline or existing Secret) mounted at `/etc/prometheus/pve.yml` with no `PVE_*` credential vars, plus optional CA Secret mount; verify with unit tests, including that no credential value appears outside Secret objects
 - [ ] 2.4 Add `examples/` values files (password, token, existing-secret, pve.yml multi-module); verify each renders via `helm template -f` in a unit test or `make lint`
 
 ## 3. Prometheus integration

@@ -81,6 +81,27 @@ pve:
   # Key of the token value in the Secret; falls back to "tokenValue" when token mode is selected.
   tokenValueKey: ""
 
+config:
+  # Contents of a pve.yml (default module) mounted at /etc/prometheus/pve.yml from a chart-created Secret
+  # (it holds credentials, so never a ConfigMap). Enables config mode: no PVE_* variables are set and
+  # pve.user, pve.password, pve.tokenName, pve.tokenValue and pve.existingSecret must be unset.
+  # Mutually exclusive with existingSecret.
+  pveYml: ""
+  # Name of an existing Secret holding a pve.yml, mounted at /etc/prometheus/pve.yml. Enables config mode.
+  existingSecret: ""
+  # Key of the pve.yml in the existing Secret.
+  existingSecretKey: pve.yml
+
+tls:
+  # Name of a Secret holding a CA certificate, mounted read-only at caMountPath. Reference it from your
+  # pve.yml with `verify_ssl: <caMountPath>/<caKey>`. PVE_VERIFY_SSL (pve.verifySsl) cannot point at a
+  # path, so a custom CA needs config mode.
+  caSecret: ""
+  # Key of the CA certificate in the Secret.
+  caKey: ca.crt
+  # Directory the CA Secret is mounted at.
+  caMountPath: /etc/prometheus/ca
+
 # Container resource requests and limits.
 resources: {}
 

@@ -76,25 +76,48 @@ Renders "true" when token authentication is selected: pve.tokenName is set, or a
 {{- end }}
 
 {{/*
+Renders "true" when a mounted pve.yml is used instead of PVE_* environment variables.
+*/}}
+{{- define "prometheus-pve-exporter.configMode" -}}
+  {{- if or .Values.config.pveYml .Values.config.existingSecret }}true{{- end }}
+{{- end }}
+
+{{/*
+Name of the Secret holding the mounted pve.yml.
+*/}}
+{{- define "prometheus-pve-exporter.configSecretName" -}}
+{{- default (printf "%s-config" (include "prometheus-pve-exporter.fullname" .)) .Values.config.existingSecret }}
+{{- end }}
+
+{{/*
 Fail the render on invalid credential configuration.
 */}}
 {{- define "prometheus-pve-exporter.validate" -}}
   {{- $token := include "prometheus-pve-exporter.tokenAuth" . }}
-  {{- if and $token .Values.pve.password }}
-    {{- fail "pve.password cannot be combined with token authentication (pve.tokenName, pve.tokenNameKey or pve.tokenValueKey); set only one" }}
-  {{- end }}
-  {{- if not .Values.pve.existingSecret }}
-    {{- if not .Values.pve.user }}
-      {{- fail "pve.user is required unless pve.existingSecret is set" }}
+  {{- if include "prometheus-pve-exporter.configMode" . }}
+    {{- if and .Values.config.pveYml .Values.config.existingSecret }}
+      {{- fail "config.pveYml and config.existingSecret are mutually exclusive; set only one" }}
     {{- end }}
-    {{- if and $token (not .Values.pve.tokenName) }}
-      {{- fail "pve.tokenName is required for token authentication" }}
+    {{- if or .Values.pve.user .Values.pve.password .Values.pve.tokenName .Values.pve.tokenValue .Values.pve.existingSecret }}
+      {{- fail "config.pveYml or config.existingSecret cannot be combined with pve.user, pve.password, pve.tokenName, pve.tokenValue or pve.existingSecret; use either a mounted pve.yml or PVE_* credentials" }}
     {{- end }}
-    {{- if and $token (not .Values.pve.tokenValue) }}
-      {{- fail "pve.tokenValue is required for token authentication" }}
+  {{- else }}
+    {{- if and $token .Values.pve.password }}
+      {{- fail "pve.password cannot be combined with token authentication (pve.tokenName, pve.tokenNameKey or pve.tokenValueKey); set only one" }}
     {{- end }}
-    {{- if and (not $token) (not .Values.pve.password) }}
-      {{- fail "pve.password (or pve.tokenName and pve.tokenValue) is required unless pve.existingSecret is set" }}
+    {{- if not .Values.pve.existingSecret }}
+      {{- if not .Values.pve.user }}
+        {{- fail "pve.user is required unless pve.existingSecret is set" }}
+      {{- end }}
+      {{- if and $token (not .Values.pve.tokenName) }}
+        {{- fail "pve.tokenName is required for token authentication" }}
+      {{- end }}
+      {{- if and $token (not .Values.pve.tokenValue) }}
+        {{- fail "pve.tokenValue is required for token authentication" }}
+      {{- end }}
+      {{- if and (not $token) (not .Values.pve.password) }}
+        {{- fail "pve.password (or pve.tokenName and pve.tokenValue) is required unless pve.existingSecret is set" }}
+      {{- end }}
     {{- end }}
   {{- end }}
 {{- end }}

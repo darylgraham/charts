@@ -12,10 +12,17 @@ spec:
       {{- include "prometheus-pve-exporter.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-{{- if or .Values.podAnnotations (not .Values.pve.existingSecret) }}
+{{- $configMode := include "prometheus-pve-exporter.configMode" . }}
+{{- $checksum := "" }}
+{{- if .Values.config.pveYml }}
+  {{- $checksum = include (print $.Template.BasePath "/config-secret.yaml") . | sha256sum }}
+{{- else if and (not $configMode) (not .Values.pve.existingSecret) }}
+  {{- $checksum = include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+{{- end }}
+{{- if or .Values.podAnnotations $checksum }}
       annotations:
-  {{- if not .Values.pve.existingSecret }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+  {{- if $checksum }}
+        checksum/secret: {{ $checksum }}
   {{- end }}
   {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -48,13 +55,14 @@ spec:
           args:
             {{- toYaml . | nindent 12 }}
 {{- end }}
+{{- if not $configMode }}
           env:
             - name: PVE_USER
               valueFrom:
                 secretKeyRef:
                   name: {{ include "prometheus-pve-exporter.secretName" . }}
                   key: {{ .Values.pve.userKey }}
-{{- if include "prometheus-pve-exporter.tokenAuth" . }}
+  {{- if include "prometheus-pve-exporter.tokenAuth" . }}
             - name: PVE_TOKEN_NAME
               valueFrom:
                 secretKeyRef:
@@ -65,15 +73,16 @@ spec:
                 secretKeyRef:
                   name: {{ include "prometheus-pve-exporter.secretName" . }}
                   key: {{ default "tokenValue" .Values.pve.tokenValueKey }}
-{{- else }}
+  {{- else }}
             - name: PVE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "prometheus-pve-exporter.secretName" . }}
                   key: {{ .Values.pve.passwordKey }}
-{{- end }}
+  {{- end }}
             - name: PVE_VERIFY_SSL
               value: {{ .Values.pve.verifySsl | quote }}
+{{- end }}
           ports:
             - name: http
               containerPort: 9221
@@ -89,6 +98,39 @@ spec:
 {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
+{{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+{{- if $configMode }}
+            - name: config
+              mountPath: /etc/prometheus/pve.yml
+              subPath: pve.yml
+              readOnly: true
+{{- end }}
+{{- if .Values.tls.caSecret }}
+            - name: ca
+              mountPath: {{ .Values.tls.caMountPath }}
+              readOnly: true
+{{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- if $configMode }}
+        - name: config
+          secret:
+            secretName: {{ include "prometheus-pve-exporter.configSecretName" . }}
+            items:
+              - key: {{ ternary "pve.yml" .Values.config.existingSecretKey (not .Values.config.existingSecret) }}
+                path: pve.yml
+{{- end }}
+{{- if .Values.tls.caSecret }}
+        - name: ca
+          secret:
+            secretName: {{ .Values.tls.caSecret }}
+            items:
+              - key: {{ .Values.tls.caKey }}
+                path: {{ .Values.tls.caKey }}
 {{- end }}
 {{- with .Values.nodeSelector }}
       nodeSelector:

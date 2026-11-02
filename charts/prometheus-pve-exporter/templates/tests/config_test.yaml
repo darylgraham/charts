@@ -1,0 +1,254 @@
+suite: config
+templates:
+  - templates/deployment.yaml
+  - templates/secret.yaml
+  - templates/config-secret.yaml
+release:
+  name: pve
+  namespace: monitoring
+
+tests:
+  - it: stores inline pve.yml in a dedicated Secret and mounts it read-only
+    set:
+      config.pveYml: "default:\n  user: marker-user@pve\n  password: marker-pw\n"
+    asserts:
+      - isKind:
+          of: Secret
+        template: templates/config-secret.yaml
+      - equal:
+          path: metadata.name
+          value: pve-prometheus-pve-exporter-config
+        template: templates/config-secret.yaml
+      - equal:
+          path: stringData
+          value:
+            pve.yml: "default:\n  user: marker-user@pve\n  password: marker-pw\n"
+        template: templates/config-secret.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/secret.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].env
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config
+            mountPath: /etc/prometheus/pve.yml
+            subPath: pve.yml
+            readOnly: true
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: config
+            secret:
+              secretName: pve-prometheus-pve-exporter-config
+              items:
+                - key: pve.yml
+                  path: pve.yml
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].args
+        template: templates/deployment.yaml
+
+  - it: rolls the pod when the inline config changes
+    set:
+      config.pveYml: "default: {}\n"
+    template: templates/deployment.yaml
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/secret"]
+          pattern: ^[0-9a-f]{64}$
+
+  - it: mounts an existing config Secret with the configured key and renders no Secret
+    set:
+      config.existingSecret: my-pve-config
+      config.existingSecretKey: custom.yml
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/secret.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/config-secret.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].env
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.metadata.annotations
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: config
+            secret:
+              secretName: my-pve-config
+              items:
+                - key: custom.yml
+                  path: pve.yml
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config
+            mountPath: /etc/prometheus/pve.yml
+            subPath: pve.yml
+            readOnly: true
+        template: templates/deployment.yaml
+
+  - it: defaults the existing config Secret key to pve.yml
+    set:
+      config.existingSecret: my-pve-config
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: config
+            secret:
+              secretName: my-pve-config
+              items:
+                - key: pve.yml
+                  path: pve.yml
+
+  - it: rejects both config sources
+    set:
+      config.pveYml: "default: {}\n"
+      config.existingSecret: my-pve-config
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: config.pveYml and config.existingSecret are mutually exclusive; set only one
+
+  - it: rejects config mode combined with PVE credentials
+    set:
+      config.existingSecret: my-pve-config
+      pve.user: monitoring@pve
+      pve.password: pw-placeholder
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: config.pveYml or config.existingSecret cannot be combined with pve.user, pve.password, pve.tokenName, pve.tokenValue or pve.existingSecret; use either a mounted pve.yml or PVE_* credentials
+
+  - it: rejects inline config combined with a PVE existing Secret
+    set:
+      config.pveYml: "default: {}\n"
+      pve.existingSecret: my-pve
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: config.pveYml or config.existingSecret cannot be combined with pve.user, pve.password, pve.tokenName, pve.tokenValue or pve.existingSecret; use either a mounted pve.yml or PVE_* credentials
+
+  - it: rejects inline config combined with pve.tokenName alone
+    set:
+      config.pveYml: "default: {}\n"
+      pve.tokenName: placeholder
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: config.pveYml or config.existingSecret cannot be combined with pve.user, pve.password, pve.tokenName, pve.tokenValue or pve.existingSecret; use either a mounted pve.yml or PVE_* credentials
+
+  - it: rejects inline config combined with pve.tokenValue alone
+    set:
+      config.pveYml: "default: {}\n"
+      pve.tokenValue: placeholder
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: config.pveYml or config.existingSecret cannot be combined with pve.user, pve.password, pve.tokenName, pve.tokenValue or pve.existingSecret; use either a mounted pve.yml or PVE_* credentials
+
+  - it: mounts the CA Secret read-only at the default path
+    set:
+      pve.user: monitoring@pve
+      pve.password: pw-placeholder
+      tls.caSecret: pve-ca
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ca
+            mountPath: /etc/prometheus/ca
+            readOnly: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ca
+            secret:
+              secretName: pve-ca
+              items:
+                - key: ca.crt
+                  path: ca.crt
+
+  - it: honours custom CA key and mount path alongside config mode
+    set:
+      config.existingSecret: my-pve-config
+      tls.caSecret: pve-ca
+      tls.caKey: root.pem
+      tls.caMountPath: /certs
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ca
+            mountPath: /certs
+            readOnly: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ca
+            secret:
+              secretName: pve-ca
+              items:
+                - key: root.pem
+                  path: root.pem
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 3
+
+  - it: mounts only a writable /tmp emptyDir in env mode without a CA
+    set:
+      pve.user: monitoring@pve
+      pve.password: pw-placeholder
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: tmp
+              emptyDir: {}
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts
+          value:
+            - name: tmp
+              mountPath: /tmp
+
+  - it: mounts /tmp in config mode too
+    set:
+      config.existingSecret: my-pve-config
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: tmp
+            emptyDir: {}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: tmp
+            mountPath: /tmp
+
+  - it: keeps config content out of every document except its Secret
+    set:
+      config.pveYml: "default:\n  password: marker-pw\n"
+    asserts:
+      - matchRegex:
+          path: stringData["pve.yml"]
+          pattern: marker-pw
+        template: templates/config-secret.yaml
+      - notMatchRegexRaw:
+          pattern: marker-pw
+        template: templates/deployment.yaml
