@@ -39,4 +39,4 @@ Facts about the exporter (from its README and Dockerfile, v3.11.0): listens on `
 - [Unit tests can't prove scrape behaviour or Proxmox auth] → manual verification recipe against a real PVE host is a human-in-the-loop task.
 - [ServiceMonitor CRD absent] → disabled by default; documented.
 - [Exporter `cluster`/`node` defaults undocumented] → always sent explicitly, defaults `"1"`/`"1"` per the README example.
-- [Env-mode cannot use a custom CA path] → document `pve.yml` mode for that case.
+- [Env-mode cannot point `verify_ssl` at a CA path] → chart sets `REQUESTS_CA_BUNDLE` when `tls.caSecret` is set (decision 6); whether the exporter honours it is unverified until task 4.4, and `pve.yml` mode (`verify_ssl: /path`) is the documented alternative.

@@ -248,7 +248,7 @@ scrape_configs:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `pve.user` | Proxmox VE user, e.g. `monitoring@pve` (`PVE_USER`); required unless `pve.existingSecret` is set | `""` |
+| `pve.user` | Proxmox VE user, e.g. `monitoring@pve` (`PVE_USER`); required unless `pve.existingSecret`, `config.pveYml` or `config.existingSecret` is set; rejected in config (pve.yml) mode | `""` |
 | `pve.password` | Password for password authentication; cannot be combined with token authentication | `""` |
 | `pve.tokenName` | API token name (`PVE_TOKEN_NAME`); setting it selects token mode | `""` |
 | `pve.tokenValue` | API token value (`PVE_TOKEN_VALUE`); required with `tokenName` | `""` |
@@ -273,7 +273,7 @@ scrape_configs:
 |-----------|-------------|---------|
 | `tls.caSecret` | Secret holding a CA certificate, mounted read-only; in env mode also sets `REQUESTS_CA_BUNDLE` | `""` |
 | `tls.caKey` | Key of the CA certificate in the Secret | `ca.crt` |
-| `tls.caMountPath` | Directory the CA Secret is mounted at | `/etc/prometheus/ca` |
+| `tls.caMountPath` | Directory the CA Secret is mounted at (no trailing slash) | `/etc/prometheus/ca` |
 
 ### ServiceMonitor
 
