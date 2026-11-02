@@ -131,6 +131,25 @@ New Helm chart `charts/prometheus-pve-exporter` deploying prometheus-pve-exporte
   - Verdict: **Approve with nits** (nit 1 is the only suggested change). -> @architect
 - **[worker]** Block 2.3 nit: added config+`pve.tokenName` and config+`pve.tokenValue` conflict fail tests in `config_test.yaml`; `TEST_EXIT:0`, helmfmt check exit 0. → @architect
 
+- **[architect]** Block 2.3 landed (reviewer Approve; token-conflict test nit fixed). Gates: `LINT_EXIT:0` `TEST_EXIT:0` `FORMAT_EXIT:0` `VALIDATE_EXIT:0`.
+- **[architect]** Block 2.4 (brief → @worker): `charts/prometheus-pve-exporter/examples/` values files: `password.yaml`, `token.yaml`, `existing-secret.yaml`, `pve-yml-multi-module.yaml` (multi-module `pve.yml` inline, with a second module using a CA path via `verify_ssl: /etc/prometheus/ca/ca.crt` and `tls.caSecret`). Use obvious placeholder values (`CHANGE_ME`, `example.invalid`-style hosts), never real-looking secrets; comment each file with when to use it. Verification: add a helm-unittest suite (e.g. `templates/tests/examples_test.yaml`) that renders the chart with each example via helm-unittest `values:` (paths relative to the chart root — check how the plugin resolves them; if it cannot load the files reliably, instead verify with a `Makefile`-free approach: report to me rather than editing the Makefile) and asserts a meaningful property per example (e.g. token example sets `PVE_TOKEN_NAME`, not `PVE_PASSWORD`; pve-yml example has the config Secret mounted and no `PVE_*`). Spec: "Credentials from a chart-managed Secret", "Credentials from an existing Secret", "Mounted configuration file". Add a short `[0.1.0]` CHANGELOG bullet. Gates: `make lint`, `make test`, `helmfmt --check charts/prometheus-pve-exporter`. No commit/ticks/Makefile edits. Post `[worker]` report before the final `\n## NEXT\n` line (match from end of file), ending → @reviewer.
+
+- **[worker]** Block 2.4 done. Added `charts/prometheus-pve-exporter/examples/{password,token,existing-secret,pve-yml-multi-module}.yaml` (placeholders `CHANGE_ME`, each commented with when to use it; multi-module example has a `lab` module with `verify_ssl: /etc/prometheus/ca/ca.crt` plus `tls.caSecret: pve-ca`). New suite `templates/tests/examples_test.yaml` loads each via `values: ../../examples/<file>` (plugin resolves paths relative to the suite file; verified by asserting on `CHANGE_ME` content) and asserts: password -> Secret content + `PVE_PASSWORD`, no `PVE_TOKEN_NAME`; token -> `PVE_TOKEN_NAME`, no `PVE_PASSWORD`; existing-secret -> no Secret, env refs `pve-credentials`; pve.yml -> config Secret has both modules and CA path, no env, config and ca mounts. CHANGELOG `[0.1.0]` bullet added.
+  - Gates: `LINT_EXIT:0` `TEST_EXIT:0` (99 passed); `helmfmt --check charts/prometheus-pve-exporter` exit 0.
+  - Note: `examples/` is not covered by `make format` YAML checks beyond helmfmt; no Makefile change needed.
+  - -> @reviewer
+
+- **[reviewer]** Block 2.4 -- **Approve**. Re-ran `make test` -> `TEST_EXIT:0` (99 passed), `make lint` -> `LINT_EXIT:0`.
+  - Rendered each example myself with `helm template -f examples/<file>`: password -> Secret + `PVE_PASSWORD`; token -> `PVE_TOKEN_NAME/VALUE`, no password; existing-secret -> no Secret, env refs `pve-credentials`; multi-module -> `-config` Secret with both modules, no `PVE_*`, `pve.yml` subPath mount and `ca` mount at `/etc/prometheus/ca` from `pve-ca`/`ca.crt`.
+  - CA path: `verify_ssl: /etc/prometheus/ca/ca.crt` = `tls.caMountPath` (`/etc/prometheus/ca`) + `tls.caKey` (`ca.crt`) defaults; lines up. Module shapes (user/password, user/token_name/token_value, verify_ssl bool or path) are valid exporter config.
+  - Loading proven: temporarily moved `examples/token.yaml` away -> suite failed (1 failed, 1 errored), restored; plus `CHANGE_ME` content assertions on the password/pve.yml examples. Assertions are specific (env entries with secretKeyRef, notContains, hasDocuments 0, mounts).
+  - Placeholders are `CHANGE_ME`; each file has a when-to-use comment. `existing-secret.yaml` references `tokenNameKey`/`tokenValueKey`, which exist in values.yaml.
+  - Packaging: `helm package` ships `examples/` (harmless, no templates in it); `.helmignore` already excludes `tests`, so the suite is not packaged. CHANGELOG bullet is under `[0.1.0]`. No README/ServiceMonitor/Makefile changes.
+  - Nits (non-blocking): the token and existing-secret suites use top-level `template:` while others use per-assert; password test's notContains is only on PVE_TOKEN_NAME (fine). Note the worker's "helmfmt exit 0" was not re-run by me (`make format` is baseline-red on other charts).
+  - -> @architect
+
+- **[architect]** Block 2.4 landed (reviewer Approve). Gates: `LINT_EXIT:0` `TEST_EXIT:0` `FORMAT_EXIT:0` `VALIDATE_EXIT:0` (`GATES_EXIT:0`). Section 2 blocks complete; spawning supervisor on `2012251..HEAD`. → @supervisor
+
 ## NEXT
 
 - **Up next:** section 2 (credentials and configuration), base = HEAD after this commit. 4.4 wording settled.

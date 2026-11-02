@@ -1,0 +1,21 @@
+# Mounted pve.yml with several modules, one of them verifying against a custom CA.
+# Use when scraping more than one Proxmox VE cluster (Prometheus selects a module with ?module=<name>)
+# or when a cluster presents a certificate signed by a private CA.
+# The pve.yml is stored in a chart-created Secret; PVE_* variables are not set in this mode.
+# Create the CA Secret beforehand:
+#   kubectl create secret generic pve-ca --from-file=ca.crt=./ca.crt
+config:
+  pveYml: |
+    default:
+      user: monitoring@pve
+      password: CHANGE_ME
+      verify_ssl: false
+    lab:
+      user: monitoring@pve
+      token_name: exporter
+      token_value: CHANGE_ME
+      verify_ssl: /etc/prometheus/ca/ca.crt
+
+tls:
+  caSecret: pve-ca
+  caKey: ca.crt
