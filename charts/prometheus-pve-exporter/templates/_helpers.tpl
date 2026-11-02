@@ -101,13 +101,16 @@ Fail the render on invalid credential configuration.
     {{- if or .Values.pve.user .Values.pve.password .Values.pve.tokenName .Values.pve.tokenValue .Values.pve.existingSecret }}
       {{- fail "config.pveYml or config.existingSecret cannot be combined with pve.user, pve.password, pve.tokenName, pve.tokenValue or pve.existingSecret; use either a mounted pve.yml or PVE_* credentials" }}
     {{- end }}
+    {{- if or (eq (toString .Values.pve.verifySsl) "false") .Values.pve.tokenNameKey .Values.pve.tokenValueKey }}
+      {{- fail "pve.verifySsl, pve.tokenNameKey and pve.tokenValueKey are ignored when config.pveYml or config.existingSecret is set; set verify_ssl in the pve.yml instead" }}
+    {{- end }}
   {{- else }}
     {{- if and $token .Values.pve.password }}
       {{- fail "pve.password cannot be combined with token authentication (pve.tokenName, pve.tokenNameKey or pve.tokenValueKey); set only one" }}
     {{- end }}
     {{- if not .Values.pve.existingSecret }}
       {{- if not .Values.pve.user }}
-        {{- fail "pve.user is required unless pve.existingSecret is set" }}
+        {{- fail "pve.user is required unless pve.existingSecret, config.pveYml or config.existingSecret is set" }}
       {{- end }}
       {{- if and $token (not .Values.pve.tokenName) }}
         {{- fail "pve.tokenName is required for token authentication" }}
@@ -116,7 +119,7 @@ Fail the render on invalid credential configuration.
         {{- fail "pve.tokenValue is required for token authentication" }}
       {{- end }}
       {{- if and (not $token) (not .Values.pve.password) }}
-        {{- fail "pve.password (or pve.tokenName and pve.tokenValue) is required unless pve.existingSecret is set" }}
+        {{- fail "pve.password (or pve.tokenName and pve.tokenValue) is required unless pve.existingSecret, config.pveYml or config.existingSecret is set" }}
       {{- end }}
     {{- end }}
   {{- end }}

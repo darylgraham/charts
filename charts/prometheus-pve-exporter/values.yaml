@@ -65,20 +65,23 @@ pve:
   tokenName: ""
   # API token value (PVE_TOKEN_VALUE). Required with tokenName.
   tokenValue: ""
-  # Verify the Proxmox server certificate (PVE_VERIFY_SSL). A custom CA is only supported with a mounted pve.yml.
+  # Verify the Proxmox server certificate (PVE_VERIFY_SSL). Ignored, and rejected when false, in config
+  # mode: set verify_ssl in the pve.yml instead.
   verifySsl: true
   # Name of an existing Secret holding the credentials; when set, the chart creates no Secret and
-  # user, password, tokenName and tokenValue above are ignored (except that a password combined
-  # with token mode is still rejected).
+  # the user, password and token values above are not stored anywhere. The authentication mode is still
+  # chosen from them: a non-empty tokenName (or tokenNameKey/tokenValueKey) selects token mode and a
+  # password combined with token mode is rejected.
   existingSecret: ""
   # Key of the user in the Secret (chart-managed or existing).
   userKey: user
   # Key of the password in the Secret. Used in password mode (the default mode).
   passwordKey: password
-  # Key of the token name in the Secret. With existingSecret, setting this or tokenValueKey selects
-  # token mode (otherwise "tokenName" is used when tokenName is set).
+  # Key of the token name in the Secret. Setting this or tokenValueKey selects token mode (the key
+  # defaults to "tokenName"). Not allowed in config mode.
   tokenNameKey: ""
   # Key of the token value in the Secret; falls back to "tokenValue" when token mode is selected.
+  # Not allowed in config mode.
   tokenValueKey: ""
 
 config:
@@ -93,9 +96,9 @@ config:
   existingSecretKey: pve.yml
 
 tls:
-  # Name of a Secret holding a CA certificate, mounted read-only at caMountPath. Reference it from your
-  # pve.yml with `verify_ssl: <caMountPath>/<caKey>`. PVE_VERIFY_SSL (pve.verifySsl) cannot point at a
-  # path, so a custom CA needs config mode.
+  # Name of a Secret holding a CA certificate, mounted read-only at caMountPath. In env mode the chart
+  # also sets REQUESTS_CA_BUNDLE=<caMountPath>/<caKey> so the exporter trusts it. In config mode set
+  # `verify_ssl: <caMountPath>/<caKey>` in your pve.yml; no variable is set.
   caSecret: ""
   # Key of the CA certificate in the Secret.
   caKey: ca.crt
@@ -126,8 +129,9 @@ serviceMonitor:
   # Proxmox VE hosts to scrape through this exporter; each one renders one endpoint with its own
   # `target` parameter and an `instance` label set to the target. An entry is either a host string
   # or a map { target, module, cluster, node } whose optional keys override `params` for that
-  # endpoint. With no targets, one endpoint is rendered without a `target` parameter or `instance`
-  # relabeling (exporter running on the Proxmox VE host itself).
+  # endpoint (`target` is required in map form; a null override falls back to `params`; empty
+  # targets are rejected). With no targets, one endpoint is rendered without a `target` parameter or
+  # `instance` relabeling (exporter running on the Proxmox VE host itself).
   targets: []
   # Extra relabelings appended to every endpoint after the chart's own.
   relabelings: []

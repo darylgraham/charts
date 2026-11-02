@@ -82,6 +82,10 @@ spec:
   {{- end }}
             - name: PVE_VERIFY_SSL
               value: {{ .Values.pve.verifySsl | quote }}
+  {{- if .Values.tls.caSecret }}
+            - name: REQUESTS_CA_BUNDLE
+              value: {{ printf "%s/%s" .Values.tls.caMountPath .Values.tls.caKey | quote }}
+  {{- end }}
 {{- end }}
           ports:
             - name: http

@@ -3,6 +3,7 @@ templates:
   - templates/deployment.yaml
   - templates/secret.yaml
   - templates/config-secret.yaml
+  - templates/servicemonitor.yaml
 release:
   name: pve
   namespace: monitoring
@@ -109,3 +110,29 @@ tests:
             mountPath: /etc/prometheus/ca
             readOnly: true
         template: templates/deployment.yaml
+
+  - it: servicemonitor example renders one endpoint per target with overrides
+    values:
+      - ../../examples/servicemonitor.yaml
+    template: templates/servicemonitor.yaml
+    asserts:
+      - equal:
+          path: metadata.labels.release
+          value: prometheus
+      - lengthEqual:
+          path: spec.endpoints
+          count: 2
+      - equal:
+          path: spec.endpoints[0].params
+          value:
+            module: ["default"]
+            cluster: ["1"]
+            node: ["1"]
+            target: ["pve1.example.com"]
+      - equal:
+          path: spec.endpoints[1].params
+          value:
+            module: ["lab"]
+            cluster: ["0"]
+            node: ["1"]
+            target: ["pve2.example.com"]

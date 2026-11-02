@@ -252,3 +252,80 @@ tests:
       - notMatchRegexRaw:
           pattern: marker-pw
         template: templates/deployment.yaml
+
+  - it: sets REQUESTS_CA_BUNDLE in env mode with a chart-managed Secret
+    set:
+      pve.user: monitoring@pve
+      pve.password: pw-placeholder
+      tls.caSecret: pve-ca
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: REQUESTS_CA_BUNDLE
+            value: /etc/prometheus/ca/ca.crt
+
+  - it: sets REQUESTS_CA_BUNDLE from a custom CA key and path with an existing Secret
+    set:
+      pve.existingSecret: my-pve
+      tls.caSecret: pve-ca
+      tls.caKey: root.pem
+      tls.caMountPath: /certs
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: REQUESTS_CA_BUNDLE
+            value: /certs/root.pem
+
+  - it: does not set REQUESTS_CA_BUNDLE without a CA Secret
+    set:
+      pve.user: monitoring@pve
+      pve.password: pw-placeholder
+    template: templates/deployment.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: REQUESTS_CA_BUNDLE
+            value: /etc/prometheus/ca/ca.crt
+      - notMatchRegexRaw:
+          pattern: REQUESTS_CA_BUNDLE
+
+  - it: does not set REQUESTS_CA_BUNDLE or any env in config mode
+    set:
+      config.existingSecret: my-pve-config
+      tls.caSecret: pve-ca
+    template: templates/deployment.yaml
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].env
+
+  - it: rejects pve.verifySsl false in config mode
+    set:
+      config.pveYml: "default: {}\n"
+      pve.verifySsl: false
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: pve.verifySsl, pve.tokenNameKey and pve.tokenValueKey are ignored when config.pveYml or config.existingSecret is set; set verify_ssl in the pve.yml instead
+
+  - it: rejects token key names in config mode
+    set:
+      config.existingSecret: my-pve-config
+      pve.tokenNameKey: tn
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: pve.verifySsl, pve.tokenNameKey and pve.tokenValueKey are ignored when config.pveYml or config.existingSecret is set; set verify_ssl in the pve.yml instead
+
+  - it: rejects a token value key in config mode
+    set:
+      config.existingSecret: my-pve-config
+      pve.tokenValueKey: tv
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorMessage: pve.verifySsl, pve.tokenNameKey and pve.tokenValueKey are ignored when config.pveYml or config.existingSecret is set; set verify_ssl in the pve.yml instead

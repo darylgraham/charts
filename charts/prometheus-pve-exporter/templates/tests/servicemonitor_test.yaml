@@ -311,3 +311,34 @@ tests:
     asserts:
       - failedTemplate:
           errorMessage: "serviceMonitor.targets[1]: map entries need a `target` key"
+
+  - it: fails when a target string is empty
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - pve1.example.com
+        - ""
+    asserts:
+      - failedTemplate:
+          errorMessage: "serviceMonitor.targets[1]: target must not be empty"
+
+  - it: fails when the only target entry is null
+    template: templates/servicemonitor.yaml
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - null
+    asserts:
+      - failedTemplate:
+          errorMessage: "serviceMonitor.targets[0]: entries must be a host string or a map with a `target` key"
+
+  - it: fails when a later target entry is null
+    template: templates/servicemonitor.yaml
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.targets:
+        - a
+        - null
+    asserts:
+      - failedTemplate:
+          errorMessage: "serviceMonitor.targets[1]: entries must be a host string or a map with a `target` key"

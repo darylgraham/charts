@@ -1,0 +1,17 @@
+# ServiceMonitor scraping two Proxmox VE hosts through one exporter.
+# Use with the Prometheus Operator when a single exporter should scrape several hosts: a plain string
+# uses the global serviceMonitor.params, a map overrides module, cluster or node for that host only.
+# Add the label your Prometheus selects ServiceMonitors by (for example `release: prometheus`).
+pve:
+  user: monitoring@pve
+  password: CHANGE_ME
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: prometheus
+  targets:
+    - pve1.example.com
+    - target: pve2.example.com
+      module: lab
+      cluster: "0"

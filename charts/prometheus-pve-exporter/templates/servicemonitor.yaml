@@ -28,6 +28,12 @@ spec:
     {{- if and (kindIs "map" $e) (not $t.target) }}
       {{- fail (printf "serviceMonitor.targets[%d]: map entries need a `target` key" $i) }}
     {{- end }}
+    {{- if and $sm.targets (not (or (kindIs "string" $e) (kindIs "map" $e))) }}
+      {{- fail (printf "serviceMonitor.targets[%d]: entries must be a host string or a map with a `target` key" $i) }}
+    {{- end }}
+    {{- if and $sm.targets (kindIs "string" $e) (not $e) }}
+      {{- fail (printf "serviceMonitor.targets[%d]: target must not be empty" $i) }}
+    {{- end }}
     - port: http
       path: /pve
       interval: {{ $sm.interval }}
