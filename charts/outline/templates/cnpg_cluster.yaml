@@ -1,0 +1,53 @@
+{{- if .Values.cnpg.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "outline.cnpgName" . | quote }}
+  labels:
+    {{- include "outline.labels" . | nindent 4 }}
+spec:
+  inheritedMetadata:
+    {{- with .Values.cnpg.annotations }}
+    annotations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  instances: {{ .Values.cnpg.instances }}
+  imageName: {{ .Values.cnpg.imageName | quote }}
+  storage:
+    storageClass: {{ required "cnpg will not use the default storage class if left empty, must specify" .Values.cnpg.persistence.storageClass | quote }}
+    size: {{ .Values.cnpg.persistence.size | quote }}
+  {{- with .Values.cnpg.monitoring }}
+  monitoring:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.cnpg.postgresql }}
+  postgresql:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.cnpg.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: {{ .Values.cnpg.auth.existingAdminSecret | quote }}
+  bootstrap:
+  {{- if .Values.cnpg.recovery }}
+    recovery:
+      {{- toYaml .Values.cnpg.recovery | nindent 6 }}
+  {{- else }}
+    initdb:
+      database: {{ .Values.cnpg.database | quote }}
+      owner: {{ .Values.cnpg.auth.username | quote }}
+      secret:
+        name: {{ .Values.cnpg.auth.existingSecret | quote }}
+  {{- end }}
+  {{- with .Values.cnpg.plugins }}
+  plugins:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.cnpg.externalClusters }}
+  externalClusters:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
