@@ -40,13 +40,19 @@ tests:
             containerPort: 9221
             protocol: TCP
 
-  - it: follows service.port for the container port
+  - it: keeps the container port and probes on 9221 when service.port is overridden
     set:
       service.port: 9300
     asserts:
       - equal:
           path: spec.template.spec.containers[0].ports[0].containerPort
-          value: 9300
+          value: 9221
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: http
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: http
 
   - it: hardens the pod by default
     asserts:

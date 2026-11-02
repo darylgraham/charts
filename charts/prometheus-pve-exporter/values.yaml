@@ -53,7 +53,7 @@ securityContext:
 service:
   # Service type.
   type: ClusterIP
-  # Service port; also the exporter listen port.
+  # Service port only; the exporter always listens on 9221 (the named "http" container port).
   port: 9221
 
 # Container resource requests and limits.

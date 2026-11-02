@@ -37,6 +37,9 @@ tests:
       - equal:
           path: spec.ports[0].port
           value: 9300
+      - equal:
+          path: spec.ports[0].targetPort
+          value: http
 
   - it: creates a service account without token automount
     template: templates/serviceaccount.yaml

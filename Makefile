@@ -21,7 +21,7 @@ CHANGES := $(notdir $(patsubst %/,%,$(filter-out %/archive/,$(wildcard openspec/
 init: helm-unittest
 	echo "Container initialised..."
 
-helm-unittest: deps
+helm-unittest:
 	helm plugin install https://github.com/helm-unittest/helm-unittest.git
 
 # --- helm ----------------------------------------------------------------------
@@ -39,10 +39,12 @@ deps:
 
 
 test:
-	@helm unittest ./charts/** -f templates/tests/*.yaml; code=$$?; echo "TEST_EXIT:$$code"; exit $$code
+	@$(MAKE) --no-print-directory deps || { echo "TEST_EXIT:1"; exit 1; }; \
+	helm unittest ./charts/** -f templates/tests/*.yaml; code=$$?; echo "TEST_EXIT:$$code"; exit $$code
 
-lint: deps
-	@helm lint ./charts/**; code=$$?; echo "LINT_EXIT:$$code"; exit $$code
+lint:
+	@$(MAKE) --no-print-directory deps || { echo "LINT_EXIT:1"; exit 1; }; \
+	helm lint ./charts/**; code=$$?; echo "LINT_EXIT:$$code"; exit $$code
 
 # helmfmt checks one chart at a time, so loop. A check, never a rewrite.
 format:
