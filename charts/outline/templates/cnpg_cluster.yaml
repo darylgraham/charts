@@ -7,10 +7,10 @@ metadata:
     {{- include "outline.labels" . | nindent 4 }}
 spec:
   inheritedMetadata:
-    {{- with .Values.cnpg.annotations }}
+  {{- with .Values.cnpg.annotations }}
     annotations:
       {{- toYaml . | nindent 6 }}
-    {{- end }}
+  {{- end }}
   instances: {{ .Values.cnpg.instances }}
   imageName: {{ .Values.cnpg.imageName | quote }}
   storage:

@@ -27,11 +27,11 @@ spec:
                     wget -S \
                       -O /dev/null \
                       --no-check-certificate \
-                      {{- if .Values.scheduler.useIngress }}
-                      {{ printf "%s/api/cron.daily?token=${UTILS_SECRET}" (include "outline.url" . | trimSuffix "/") | quote }} 2>&1 \
-                      {{- else }}
-                      {{ printf "http://%s:%0.f/api/cron.daily?token=${UTILS_SECRET}" (include "outline.fullname" .) .Values.service.port | quote }} 2>&1 \
-                      {{- end }}
+  {{- if .Values.scheduler.useIngress }}
+    {{ printf "%s/api/cron.daily?token=${UTILS_SECRET}" (include "outline.url" . | trimSuffix "/") | quote }} 2>&1 \
+  {{- else }}
+    {{ printf "http://%s:%0.f/api/cron.daily?token=${UTILS_SECRET}" (include "outline.fullname" .) .Values.service.port | quote }} 2>&1 \
+  {{- end }}
                     | sed -rn 's:.*HTTP/.* ([0-9]+) .*:\1:p' | tail -1
                   )
 
@@ -41,10 +41,10 @@ spec:
                     echo "failed to invoke cron.daily"
                     exit 1
                   fi
-              {{- with .Values.environmentFrom }}
+  {{- with .Values.environmentFrom }}
               envFrom:
                 {{- toYaml . | nindent 16 }}
-              {{- end }}
+  {{- end }}
               env:
                 {{- include "outline.envs" . | nindent 16 }}
           restartPolicy: OnFailure

@@ -1,6 +1,6 @@
 {{- if .Values.httpRoute.enabled -}}
-{{- $fullName := include "home-information.fullname" . -}}
-{{- $svcPort := .Values.service.port -}}
+  {{- $fullName := include "home-information.fullname" . -}}
+  {{- $svcPort := .Values.service.port -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -13,15 +13,15 @@ metadata:
   {{- end }}
 spec:
   parentRefs:
-    {{- with .Values.httpRoute.parentRefs }}
+  {{- with .Values.httpRoute.parentRefs }}
       {{- toYaml . | nindent 4 }}
-    {{- end }}
+  {{- end }}
   {{- with .Values.httpRoute.hostnames }}
   hostnames:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   rules:
-    {{- range .Values.httpRoute.rules }}
+  {{- range .Values.httpRoute.rules }}
     {{- with .matches }}
     - matches:
       {{- toYaml . | nindent 8 }}
@@ -34,5 +34,5 @@ spec:
         - name: {{ $fullName }}
           port: {{ $svcPort }}
           weight: 1
-    {{- end }}
+  {{- end }}
 {{- end }}
