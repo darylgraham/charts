@@ -44,7 +44,16 @@ test:
 
 lint:
 	@$(MAKE) --no-print-directory deps || { echo "LINT_EXIT:1"; exit 1; }; \
-	helm lint ./charts/**; code=$$?; echo "LINT_EXIT:$$code"; exit $$code
+	code=0; helm lint ./charts/** || code=1; \
+	for f in charts/*/examples/*.yaml; do \
+	  [ -e "$$f" ] || continue; c="$$(dirname "$$(dirname "$$f")")"; \
+	  out="$$(helm template lint-example "$$c" -f "$$f" 2>&1 >/dev/null)" || { echo "example failed to render: $$f"; echo "$$out"; code=1; }; \
+	done; \
+	echo "LINT_EXIT:$$code"; exit $$code
+
+# `lint` also renders each chart with every examples/*.yaml values file. `helm lint` reports a
+# render-time `fail` only as [INFO] (and exits 0), so `helm template` is what actually proves an
+# example is valid.
 
 # helmfmt checks one chart at a time, so loop. A check, never a rewrite.
 format:
