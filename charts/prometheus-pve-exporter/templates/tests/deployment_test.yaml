@@ -1,0 +1,177 @@
+suite: deployment
+templates:
+  - templates/deployment.yaml
+release:
+  name: pve
+  namespace: monitoring
+
+tests:
+  - it: renders a Deployment named after the release
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: pve-prometheus-pve-exporter
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: defaults the image tag to appVersion without a v prefix
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: prompve/prometheus-pve-exporter:3.11.0
+
+  - it: uses image.tag when set
+    set:
+      image.tag: "3.10.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: prompve/prometheus-pve-exporter:3.10.0
+
+  - it: exposes the named http port 9221
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: http
+            containerPort: 9221
+            protocol: TCP
+
+  - it: follows service.port for the container port
+    set:
+      service.port: 9300
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 9300
+
+  - it: hardens the pod by default
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            runAsNonRoot: true
+            runAsUser: 101
+            runAsGroup: 101
+            fsGroup: 101
+            seccompProfile:
+              type: RuntimeDefault
+
+  - it: hardens the container by default
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+  - it: defines http liveness and readiness probes on the named port
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value:
+            path: /
+            port: http
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value:
+            path: /
+            port: http
+
+  - it: omits args by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].args
+
+  - it: passes extraArgs as container args
+    set:
+      extraArgs:
+        - --no-collector.config
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value:
+            - --no-collector.config
+
+  - it: applies resources, scheduling, pull secrets, annotations and labels
+    set:
+      resources:
+        limits:
+          memory: 128Mi
+      nodeSelector:
+        disktype: ssd
+      tolerations:
+        - key: dedicated
+          operator: Exists
+      affinity:
+        nodeAffinity: {}
+      imagePullSecrets:
+        - name: regcred
+      podAnnotations:
+        a: b
+      podLabels:
+        team: infra
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 128Mi
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            disktype: ssd
+      - equal:
+          path: spec.template.spec.tolerations[0].key
+          value: dedicated
+      - exists:
+          path: spec.template.spec.affinity.nodeAffinity
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred
+      - equal:
+          path: spec.template.metadata.annotations.a
+          value: b
+      - equal:
+          path: spec.template.metadata.labels.team
+          value: infra
+
+  - it: honours nameOverride and fullnameOverride
+    set:
+      fullnameOverride: custom
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: prometheus-pve-exporter
+
+  - it: honours nameOverride in the fullname and selector
+    set:
+      nameOverride: pvex
+    asserts:
+      - equal:
+          path: metadata.name
+          value: pve-pvex
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: pvex
+
+  - it: uses the generated service account by default
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: pve-prometheus-pve-exporter
+
+  - it: uses the default service account when creation is disabled
+    set:
+      serviceAccount.create: false
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: default

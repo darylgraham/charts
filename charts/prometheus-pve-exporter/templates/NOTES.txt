@@ -1,0 +1,13 @@
+prometheus-pve-exporter {{ .Chart.AppVersion }} is deployed as service {{ include "prometheus-pve-exporter.fullname" . }} on port {{ .Values.service.port }}.
+
+1. Reach the exporter from inside the cluster at:
+  http://{{ include "prometheus-pve-exporter.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}
+
+2. Or port-forward it to your machine:
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "prometheus-pve-exporter.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+
+3. Endpoints:
+  Proxmox VE metrics (scrape target):
+    curl 'http://127.0.0.1:{{ .Values.service.port }}/pve?target=<proxmox-host>&module=default&cluster=1&node=1'
+  Exporter self-metrics:
+    curl 'http://127.0.0.1:{{ .Values.service.port }}/metrics'

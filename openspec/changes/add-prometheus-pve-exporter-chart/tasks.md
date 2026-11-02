@@ -2,9 +2,9 @@
 
 ## 1. Chart skeleton and core workload
 
-- [ ] 1.1 Create `charts/prometheus-pve-exporter/` with `Chart.yaml` (v0.1.0, appVersion 3.11.0), `.helmignore`, `_helpers.tpl`, `values.yaml`, and `CHANGELOG.md` (`[Unreleased]` + `[0.1.0]`); verify `make lint` reports `LINT_EXIT:0`
-- [ ] 1.2 Add `deployment.yaml`, `service.yaml`, `serviceaccount.yaml` (port 9221, extraArgs, resources, scheduling, hardened securityContext per design decision 7, probes per decision 8); confirm the probe path against the image or fall back to tcpSocket, and verify with a helm-unittest suite asserting image tag, port, securityContext and probes (`TEST_EXIT:0`)
-- [ ] 1.3 Add `templates/NOTES.txt` describing how to reach `/pve` and `/metrics`; verify `helm template` renders without error
+- [x] 1.1 Create `charts/prometheus-pve-exporter/` with `Chart.yaml` (v0.1.0, appVersion 3.11.0), `.helmignore`, `_helpers.tpl`, `values.yaml`, and `CHANGELOG.md` (`[Unreleased]` + `[0.1.0]`); verify `make lint` reports `LINT_EXIT:0`
+- [x] 1.2 Add `deployment.yaml`, `service.yaml`, `serviceaccount.yaml` (port 9221, extraArgs, resources, scheduling, hardened securityContext per design decision 7, probes per decision 8); confirm the probe path against the image or fall back to tcpSocket, and verify with a helm-unittest suite asserting image tag, port, securityContext and probes (`TEST_EXIT:0`)
+- [x] 1.3 Add `templates/NOTES.txt` describing how to reach `/pve` and `/metrics`; verify `helm template` renders without error
 
 ## 2. Credentials and configuration
 

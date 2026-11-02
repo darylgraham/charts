@@ -1,0 +1,86 @@
+# Default values for prometheus-pve-exporter.
+
+# Number of exporter replicas.
+replicaCount: 1
+
+image:
+  # Exporter image repository.
+  repository: prompve/prometheus-pve-exporter
+  # Image pull policy.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion (tags have no "v" prefix).
+  tag: ""
+
+# Secrets used to pull the image from a private registry.
+imagePullSecrets: []
+# Overrides the chart name.
+nameOverride: ""
+# Overrides the fully qualified release name.
+fullnameOverride: ""
+
+serviceAccount:
+  # Create a service account.
+  create: true
+  # Mount the service account token into the pod; the exporter does not talk to the Kubernetes API.
+  automount: false
+  # Annotations added to the service account.
+  annotations: {}
+  # Name of the service account. Defaults to the fullname when create is true, otherwise "default".
+  name: ""
+
+# Annotations added to the pod.
+podAnnotations: {}
+# Extra labels added to the pod.
+podLabels: {}
+
+# Pod-level security context. The image runs as uid 101.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+  fsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security context.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  # Service type.
+  type: ClusterIP
+  # Service port; also the exporter listen port.
+  port: 9221
+
+# Container resource requests and limits.
+resources: {}
+
+# Additional exporter arguments appended to the container args, e.g. ["--no-collector.config"].
+extraArgs: []
+
+# Liveness probe for the exporter container.
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# Readiness probe for the exporter container.
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# Node selector for pod scheduling.
+nodeSelector: {}
+# Tolerations for pod scheduling.
+tolerations: []
+# Affinity rules for pod scheduling.
+affinity: {}
