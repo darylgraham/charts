@@ -21,7 +21,16 @@
 - [ ] 4.2 **Needs human confirmation.** Before merging, confirm the Product Owner is happy for the merge to publish `prometheus-pve-exporter-0.1.0` and `outline-1.10.0` as GitHub releases. After the merge, verify `gh run list --workflow release-charts.yml --limit 1` shows `completed success`, `gh release list` shows both new releases, and `helm repo add darylgraham https://darylgraham.github.io/charts && helm search repo darylgraham` lists all three charts. Do not tick until the Product Owner confirms
 - [ ] 4.3 Re-run the release workflow (`gh workflow run release-charts.yml`) and verify it also completes green (idempotent via `skip_existing`)
 
+## 5. Pin actions to commit SHAs
+
+Land before the merge in 4.2, so the release job and the PR run both use the pinned form. 5.1 depends on a Product Owner action: the repo's Actions allow list must permit the pinned refs.
+
+- [ ] 5.1 **Needs human confirmation (allow list).** Resolve the commit SHAs for `actions/checkout@v4`, `azure/setup-helm@v4` and `helm/chart-releaser-action@v1.7.0` (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`), and pin every `uses:` in both workflows to the full 40-char SHA with the tag as a trailing comment. Verify `grep -hn 'uses:' .github/workflows/*.yml` shows only 40-char SHAs with `# vX` comments and both files still parse. The Product Owner updates Settings -> Actions -> General (allow list) to permit the pinned refs (or a wildcard); do not tick until they confirm
+- [ ] 5.2 Add `.github/dependabot.yml` for the `github-actions` ecosystem (weekly) and verify it parses as YAML and `ecosystem: github-actions` covers `/`
+- [ ] 5.3 Set `persist-credentials: false` on the checkout in `ci.yml` only (the release job's version-sync step needs the credentials) and verify with `grep -n persist-credentials .github/workflows/*.yml`
+- [ ] 5.4 Verify the pinned `CI` run on the PR starts jobs (not `startup_failure`) and is green: `gh run list --workflow ci.yml --limit 1` shows `completed success`
+
 ## Workflow follow-up
 
-- Archive the change once 4.2 and 4.3 are confirmed.
+- Archive the change once 4.2, 4.3 and section 5 are confirmed.
 - Follow-up change (not this one): replace the release workflow's version-sync push to protected `main` with a PR-time check that each chart's `Chart.yaml` version matches its CHANGELOG.
