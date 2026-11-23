@@ -12,8 +12,8 @@
 
 ## 3. Release job packages every chart
 
-- [ ] 3.1 Update `.github/workflows/release-charts.yml`: add `make chart-deps` (with Helm set up first, via the same pinned `azure/setup-helm@v4`) before chart-releaser, `skip_existing: true`, a `concurrency` group `release` with `cancel-in-progress: false`, and `timeout-minutes`; leave the version-sync step unchanged. Verify the file parses and that `make chart-deps` is ordered before the `helm/chart-releaser-action` step
-- [ ] 3.2 Reproduce the failing packaging step locally in a scratch clone with no `~/.config/helm` repositories: run `make chart-deps` then `helm package charts/outline -d <scratch>` and verify a `.tgz` is produced (the original failure was `no repository definition for https://charts.bitnami.com/bitnami`)
+- [x] 3.1 Update `.github/workflows/release-charts.yml`: add `make chart-deps` (with Helm set up first, via the same pinned `azure/setup-helm@v4`) before chart-releaser, `skip_existing: true`, a `concurrency` group `release` with `cancel-in-progress: false`, and `timeout-minutes`; leave the version-sync step unchanged. Verify the file parses and that `make chart-deps` is ordered before the `helm/chart-releaser-action` step
+- [x] 3.2 Reproduce the failing packaging step locally in a scratch clone with no `~/.config/helm` repositories: run `make chart-deps` then `helm package charts/outline -d <scratch>` and verify a `.tgz` is produced (the original failure was `no repository definition for https://charts.bitnami.com/bitnami`)
 
 ## 4. Prove it on GitHub
 
