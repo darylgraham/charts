@@ -1,0 +1,150 @@
+{{- include "prometheus-pve-exporter.validate" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "prometheus-pve-exporter.fullname" . }}
+  labels:
+    {{- include "prometheus-pve-exporter.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "prometheus-pve-exporter.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+{{- $configMode := include "prometheus-pve-exporter.configMode" . }}
+{{- $checksum := "" }}
+{{- if .Values.config.pveYml }}
+  {{- $checksum = include (print $.Template.BasePath "/config-secret.yaml") . | sha256sum }}
+{{- else if and (not $configMode) (not .Values.pve.existingSecret) }}
+  {{- $checksum = include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+{{- end }}
+{{- if or .Values.podAnnotations $checksum }}
+      annotations:
+  {{- if $checksum }}
+        checksum/secret: {{ $checksum }}
+  {{- end }}
+  {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+  {{- end }}
+{{- end }}
+      labels:
+        {{- include "prometheus-pve-exporter.labels" . | nindent 8 }}
+{{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+{{- end }}
+    spec:
+{{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+{{- end }}
+      serviceAccountName: {{ include "prometheus-pve-exporter.serviceAccountName" . }}
+{{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+{{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+{{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+{{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+{{- with .Values.extraArgs }}
+          args:
+            {{- toYaml . | nindent 12 }}
+{{- end }}
+{{- if not $configMode }}
+          env:
+            - name: PVE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ .Values.pve.userKey }}
+  {{- if include "prometheus-pve-exporter.tokenAuth" . }}
+            - name: PVE_TOKEN_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ default "tokenName" .Values.pve.tokenNameKey }}
+            - name: PVE_TOKEN_VALUE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ default "tokenValue" .Values.pve.tokenValueKey }}
+  {{- else }}
+            - name: PVE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "prometheus-pve-exporter.secretName" . }}
+                  key: {{ .Values.pve.passwordKey }}
+  {{- end }}
+            - name: PVE_VERIFY_SSL
+              value: {{ .Values.pve.verifySsl | quote }}
+  {{- if .Values.tls.caSecret }}
+            - name: REQUESTS_CA_BUNDLE
+              value: {{ printf "%s/%s" .Values.tls.caMountPath .Values.tls.caKey | quote }}
+  {{- end }}
+{{- end }}
+          ports:
+            - name: http
+              containerPort: 9221
+              protocol: TCP
+{{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+{{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+{{- if $configMode }}
+            - name: config
+              mountPath: /etc/prometheus/pve.yml
+              subPath: pve.yml
+              readOnly: true
+{{- end }}
+{{- if .Values.tls.caSecret }}
+            - name: ca
+              mountPath: {{ .Values.tls.caMountPath }}
+              readOnly: true
+{{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- if $configMode }}
+        - name: config
+          secret:
+            secretName: {{ include "prometheus-pve-exporter.configSecretName" . }}
+            items:
+              - key: {{ ternary "pve.yml" .Values.config.existingSecretKey (not .Values.config.existingSecret) }}
+                path: pve.yml
+{{- end }}
+{{- if .Values.tls.caSecret }}
+        - name: ca
+          secret:
+            secretName: {{ .Values.tls.caSecret }}
+            items:
+              - key: {{ .Values.tls.caKey }}
+                path: {{ .Values.tls.caKey }}
+{{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+{{- end }}

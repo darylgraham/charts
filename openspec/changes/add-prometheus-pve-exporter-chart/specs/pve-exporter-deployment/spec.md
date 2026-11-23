@@ -56,6 +56,10 @@ The chart SHALL expose whether the exporter verifies the Proxmox server certific
 - **WHEN** the chart is rendered with defaults
 - **THEN** `PVE_VERIFY_SSL` is `true`
 
+#### Scenario: CA bundle in env mode
+- **WHEN** `tls.caSecret` is set and the chart is in env (non-`pve.yml`) mode
+- **THEN** the CA is mounted and `REQUESTS_CA_BUNDLE` is set to the mounted bundle path
+
 #### Scenario: Verification disabled
 - **WHEN** `pve.verifySsl` is `false`
 - **THEN** `PVE_VERIFY_SSL` is `false`

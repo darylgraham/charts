@@ -3,3 +3,6 @@ temp
 __snapshot__
 .env
 .claude/.dmons-tripwire/
+
+# Fetched subchart dependencies
+charts/*/charts/

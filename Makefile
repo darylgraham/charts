@@ -16,7 +16,7 @@ SHELL := /bin/bash
 
 CHANGES := $(notdir $(patsubst %/,%,$(filter-out %/archive/,$(wildcard openspec/changes/*/))))
 
-.PHONY: init helm-unittest test lint format validate changes gates
+.PHONY: init helm-unittest deps test lint format validate changes gates
 
 init: helm-unittest
 	echo "Container initialised..."
@@ -26,11 +26,33 @@ helm-unittest:
 
 # --- helm ----------------------------------------------------------------------
 
-test:
-	@helm unittest ./charts/** -f templates/tests/*.yaml; code=$$?; echo "TEST_EXIT:$$code"; exit $$code
+# Charts with subchart dependencies (outline) only lint/template once those are fetched;
+# without them, values such as redis.master.service.ports are missing and templates error.
+# Idempotent; `helm dependency build` honours Chart.lock.
+deps:
+	@for c in charts/*/; do \
+	  grep -q '^dependencies:' $$c/Chart.yaml || continue; \
+	  grep -E '^[[:space:]]+repository: https?://' $$c/Chart.yaml | awk '{print $$2}' | sort -u | \
+	    while read -r url; do helm repo add "$$(echo $$url | sed -E 's#https?://##; s#[^A-Za-z0-9]+#-#g')" "$$url" --force-update >/dev/null; done; \
+	  helm dependency build $$c >/dev/null || exit 1; \
+	done
 
+
+test:
+	@$(MAKE) --no-print-directory deps || { echo "TEST_EXIT:1"; exit 1; }; \
+	helm unittest ./charts/** -f templates/tests/*.yaml; code=$$?; echo "TEST_EXIT:$$code"; exit $$code
+
+# `lint` also renders each chart with every examples/*.yaml values file. `helm lint` reports a
+# render-time `fail` only as [INFO] (and exits 0), so `helm template` is used to catch broken
+# example values (it checks render and YAML syntax, not the Kubernetes schema; *.yml is skipped).
 lint:
-	@helm lint ./charts/**; code=$$?; echo "LINT_EXIT:$$code"; exit $$code
+	@$(MAKE) --no-print-directory deps || { echo "LINT_EXIT:1"; exit 1; }; \
+	code=0; helm lint ./charts/** || code=1; \
+	for f in charts/*/examples/*.yaml; do \
+	  [ -e "$$f" ] || continue; c="$$(dirname "$$(dirname "$$f")")"; \
+	  out="$$(helm template lint-example "$$c" -f "$$f" 2>&1 >/dev/null)" || { echo "example failed to render: $$f"; echo "$$out"; code=1; }; \
+	done; \
+	echo "LINT_EXIT:$$code"; exit $$code
 
 # helmfmt checks one chart at a time, so loop. A check, never a rewrite.
 format:

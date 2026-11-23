@@ -1,0 +1,138 @@
+suite: examples
+templates:
+  - templates/deployment.yaml
+  - templates/secret.yaml
+  - templates/config-secret.yaml
+  - templates/servicemonitor.yaml
+release:
+  name: pve
+  namespace: monitoring
+
+tests:
+  - it: password example renders a Secret and PVE_PASSWORD
+    values:
+      - ../../examples/password.yaml
+    asserts:
+      - equal:
+          path: stringData
+          value:
+            user: monitoring@pve
+            password: CHANGE_ME
+        template: templates/secret.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PVE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pve-prometheus-pve-exporter
+                key: password
+        template: templates/deployment.yaml
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PVE_TOKEN_NAME
+            valueFrom:
+              secretKeyRef:
+                name: pve-prometheus-pve-exporter
+                key: tokenName
+        template: templates/deployment.yaml
+
+  - it: token example sets PVE_TOKEN_NAME and not PVE_PASSWORD
+    values:
+      - ../../examples/token.yaml
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PVE_TOKEN_NAME
+            valueFrom:
+              secretKeyRef:
+                name: pve-prometheus-pve-exporter
+                key: tokenName
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PVE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pve-prometheus-pve-exporter
+                key: password
+
+  - it: existing-secret example references the Secret and renders none
+    values:
+      - ../../examples/existing-secret.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/secret.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PVE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pve-credentials
+                key: password
+        template: templates/deployment.yaml
+
+  - it: pve.yml multi-module example mounts the config Secret and the CA with no PVE_ variables
+    values:
+      - ../../examples/pve-yml-multi-module.yaml
+    asserts:
+      - matchRegex:
+          path: stringData["pve.yml"]
+          pattern: "lab:"
+        template: templates/config-secret.yaml
+      - matchRegex:
+          path: stringData["pve.yml"]
+          pattern: "verify_ssl: /etc/prometheus/ca/ca.crt"
+        template: templates/config-secret.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/secret.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].env
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: config
+            mountPath: /etc/prometheus/pve.yml
+            subPath: pve.yml
+            readOnly: true
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ca
+            mountPath: /etc/prometheus/ca
+            readOnly: true
+        template: templates/deployment.yaml
+
+  - it: servicemonitor example renders one endpoint per target with overrides
+    values:
+      - ../../examples/servicemonitor.yaml
+    template: templates/servicemonitor.yaml
+    asserts:
+      - equal:
+          path: metadata.labels.release
+          value: prometheus
+      - lengthEqual:
+          path: spec.endpoints
+          count: 2
+      - equal:
+          path: spec.endpoints[0].params
+          value:
+            module: ["default"]
+            cluster: ["1"]
+            node: ["1"]
+            target: ["pve1.example.com"]
+      - equal:
+          path: spec.endpoints[1].params
+          value:
+            module: ["lab"]
+            cluster: ["0"]
+            node: ["1"]
+            target: ["pve2.example.com"]

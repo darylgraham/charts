@@ -1,0 +1,7 @@
+# API token authentication with a chart-managed Secret.
+# Use when you have a Proxmox VE API token (recommended over a password for a read-only monitoring user).
+# Setting tokenName selects token mode; tokenValue is then required.
+pve:
+  user: monitoring@pve
+  tokenName: exporter
+  tokenValue: CHANGE_ME

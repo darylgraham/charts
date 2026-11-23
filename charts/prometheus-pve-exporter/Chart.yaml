@@ -1,0 +1,6 @@
+apiVersion: v2
+name: prometheus-pve-exporter
+description: A Helm chart for deploying prometheus-pve-exporter, a Prometheus exporter for Proxmox VE
+type: application
+version: 0.1.0
+appVersion: "3.11.0"
