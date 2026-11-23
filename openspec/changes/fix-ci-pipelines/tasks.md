@@ -2,8 +2,8 @@
 
 ## 1. Pinned tooling in the Makefile
 
-- [ ] 1.1 Pin the helm-unittest plugin in the `helm-unittest` target (`--version v1.2.1`) and verify `make init` on a machine without the plugin installs 1.2.1 (`helm plugin list`) and `make deps` reports `DEPS_EXIT:0`
-- [ ] 1.2 Record the pinned CI tool versions (Helm v3.22.1, helm-unittest v1.2.1, helmfmt v0.7.0) in `docs/dependencies.md` and verify each row still matches its `make deps` check
+- [x] 1.1 Pin the helm-unittest plugin in the `helm-unittest` target (`--version v1.2.1`) and verify `make init` on a machine without the plugin installs 1.2.1 (`helm plugin list`) and `make deps` reports `DEPS_EXIT:0`
+- [x] 1.2 Record the pinned CI tool versions (Helm v3.22.1, helm-unittest v1.2.1, helmfmt v0.7.0) in `docs/dependencies.md` and verify each row still matches its `make deps` check
 
 ## 2. PR CI runs the repo's gates
 
