@@ -1,4 +1,3 @@
-# dmons-scaffold: 0.5.1
 # Helm charts — gate targets.
 #
 # Every gate prints its own exit code as `LABEL_EXIT:<n>` and exits with it, so a

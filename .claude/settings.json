@@ -8,39 +8,5 @@
       "Bash(make gates)",
       "Bash(make changes)"
     ]
-  },
-  "hooks": {
-    "SubagentStart": [
-      {
-        "matcher": "^(worker|worker-.+|reviewer|supervisor)$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/dmons-tripwire.sh\" start"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "^(worker|worker-.+|reviewer|supervisor)$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/dmons-tripwire.sh\" stop"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/dmons-tripwire.sh\" report"
-          }
-        ]
-      }
-    ]
   }
 }
