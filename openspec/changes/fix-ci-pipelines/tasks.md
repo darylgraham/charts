@@ -17,7 +17,7 @@
 
 ## 4. Prove it on GitHub
 
-- [ ] 4.1 Open the PR from `change/fix-ci-pipelines` to `main` and verify the `CI` run starts a job (not `startup_failure`) and completes green: `gh run list --workflow ci.yml --limit 1` shows `completed success`, and the job log shows `LINT_EXIT:0`, `TEST_EXIT:0`, `FORMAT_EXIT:0`
+- [x] 4.1 Open the PR from `change/fix-ci-pipelines` to `main` and verify the `CI` run starts a job (not `startup_failure`) and completes green: `gh run list --workflow ci.yml --limit 1` shows `completed success`, and the job log shows `LINT_EXIT:0`, `TEST_EXIT:0`, `FORMAT_EXIT:0`
 - [ ] 4.2 **Needs human confirmation.** Before merging, confirm the Product Owner is happy for the merge to publish `prometheus-pve-exporter-0.1.0` and `outline-1.10.0` as GitHub releases. After the merge, verify `gh run list --workflow release-charts.yml --limit 1` shows `completed success`, `gh release list` shows both new releases, and `helm repo add darylgraham https://darylgraham.github.io/charts && helm search repo darylgraham` lists all three charts. Do not tick until the Product Owner confirms
 - [ ] 4.3 Re-run the release workflow (`gh workflow run release-charts.yml`) and verify it also completes green (idempotent via `skip_existing`)
 
