@@ -15,7 +15,7 @@ SHELL := /bin/bash
 
 CHANGES := $(notdir $(patsubst %/,%,$(filter-out %/archive/,$(wildcard openspec/changes/*/))))
 
-.PHONY: init helm-unittest deps test lint format validate changes gates
+.PHONY: init helm-unittest deps chart-deps test lint format validate changes gates
 
 init: helm-unittest
 	echo "Container initialised..."
@@ -25,10 +25,11 @@ helm-unittest:
 
 # --- helm ----------------------------------------------------------------------
 
+# `chart-deps` fetches subchart dependencies (`deps` is the tool/login check, below).
 # Charts with subchart dependencies (outline) only lint/template once those are fetched;
 # without them, values such as redis.master.service.ports are missing and templates error.
 # Idempotent; `helm dependency build` honours Chart.lock.
-deps:
+chart-deps:
 	@for c in charts/*/; do \
 	  grep -q '^dependencies:' $$c/Chart.yaml || continue; \
 	  grep -E '^[[:space:]]+repository: https?://' $$c/Chart.yaml | awk '{print $$2}' | sort -u | \
@@ -38,14 +39,14 @@ deps:
 
 
 test:
-	@$(MAKE) --no-print-directory deps || { echo "TEST_EXIT:1"; exit 1; }; \
+	@$(MAKE) --no-print-directory chart-deps || { echo "TEST_EXIT:1"; exit 1; }; \
 	helm unittest ./charts/** -f templates/tests/*.yaml; code=$$?; echo "TEST_EXIT:$$code"; exit $$code
 
 # `lint` also renders each chart with every examples/*.yaml values file. `helm lint` reports a
 # render-time `fail` only as [INFO] (and exits 0), so `helm template` is used to catch broken
 # example values (it checks render and YAML syntax, not the Kubernetes schema; *.yml is skipped).
 lint:
-	@$(MAKE) --no-print-directory deps || { echo "LINT_EXIT:1"; exit 1; }; \
+	@$(MAKE) --no-print-directory chart-deps || { echo "LINT_EXIT:1"; exit 1; }; \
 	code=0; helm lint ./charts/** || code=1; \
 	for f in charts/*/examples/*.yaml; do \
 	  [ -e "$$f" ] || continue; c="$$(dirname "$$(dirname "$$f")")"; \
@@ -80,3 +81,16 @@ changes:
 gates:
 	@$(MAKE) --no-print-directory -k lint test format validate; code=$$?; \
 	echo "GATES_EXIT:$$code"; exit $$code
+
+# Every tool and login in docs/dependencies.md — keep the two in step. Not part of
+# `gates`: it checks the machine, not the code, and auth checks may need the network.
+deps:
+	@fail=0; \
+	make --version >/dev/null 2>&1 || { echo "MISSING make — apt install make"; fail=1; }; \
+	helm version --short 2>/dev/null | grep -q '^v3\.' || { echo "MISSING/WRONG VERSION helm — need 3.x"; fail=1; }; \
+	helm plugin list 2>/dev/null | grep -q '^unittest' || { echo "MISSING helm-unittest — make init"; fail=1; }; \
+	helmfmt --version >/dev/null 2>&1 || { echo "MISSING helmfmt"; fail=1; }; \
+	openspec --version >/dev/null 2>&1 || { echo "MISSING openspec — npm i -g @fission-ai/openspec"; fail=1; }; \
+	gh --version >/dev/null 2>&1 || { echo "MISSING gh — apt install gh"; fail=1; }; \
+	gh auth status >/dev/null 2>&1 || { echo "NOT AUTHENTICATED gh — gh auth login"; fail=1; }; \
+	echo "DEPS_EXIT:$$fail"; exit $$fail
