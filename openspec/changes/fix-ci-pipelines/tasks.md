@@ -7,8 +7,8 @@
 
 ## 2. PR CI runs the repo's gates
 
-- [ ] 2.1 Rewrite `.github/workflows/ci.yml`: keep workflow name `CI` and job id `lint-test`; add `workflow_dispatch`, `permissions: contents: read`, a per-ref concurrency group with `cancel-in-progress: true`, `timeout-minutes`; install Helm (`azure/setup-helm@v4`, pinned version), the plugin via `make init`, and helmfmt from the pinned release tarball with checksum verification; run `make lint`, `make test`, `make format` as separate steps. Verify the file parses (`python3 -c 'import yaml,sys; yaml.safe_load(open(".github/workflows/ci.yml"))'`) and that every gate step is a bare `make <target>` call
-- [ ] 2.2 Run the three CI gate commands locally from a clean checkout of the branch (`git clone` into a scratch dir, no `charts/*/charts/`) and verify `LINT_EXIT:0`, `TEST_EXIT:0`, `FORMAT_EXIT:0` — proving `chart-deps` makes outline lintable without pre-fetched subcharts
+- [x] 2.1 Rewrite `.github/workflows/ci.yml`: keep workflow name `CI` and job id `lint-test`; add `workflow_dispatch`, `permissions: contents: read`, a per-ref concurrency group with `cancel-in-progress: true`, `timeout-minutes`; install Helm (`azure/setup-helm@v4`, pinned version), the plugin via `make init`, and helmfmt from the pinned release tarball with checksum verification; run `make lint`, `make test`, `make format` as separate steps. Verify the file parses (`python3 -c 'import yaml,sys; yaml.safe_load(open(".github/workflows/ci.yml"))'`) and that every gate step is a bare `make <target>` call
+- [x] 2.2 Run the three CI gate commands locally from a clean checkout of the branch (`git clone` into a scratch dir, no `charts/*/charts/`) and verify `LINT_EXIT:0`, `TEST_EXIT:0`, `FORMAT_EXIT:0` — proving `chart-deps` makes outline lintable without pre-fetched subcharts
 
 ## 3. Release job packages every chart
 
