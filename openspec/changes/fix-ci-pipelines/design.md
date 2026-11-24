@@ -57,4 +57,4 @@ Facts that constrain the approach:
 
 ## Open Questions
 
-- Whether `main` requires the `lint-test` status check (needs a repo admin; does not change the approach).
+None. (Resolved: `main` is governed by the `protect-main` ruleset; it has **no required status checks**, so the `lint-test` job id is not load-bearing. The ruleset's `update` rule means only the Admin role can merge into `main`, which also means the release workflow's version-sync push, made as `github-actions`, would be rejected.)
