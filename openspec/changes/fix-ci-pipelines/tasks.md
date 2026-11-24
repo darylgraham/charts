@@ -28,7 +28,7 @@ Land before the merge in 4.2, so the release job and the PR run both use the pin
 - [x] 5.1 **Needs human confirmation (allow list).** Resolve the commit SHAs for `actions/checkout@v4`, `azure/setup-helm@v4` and `helm/chart-releaser-action@v1.7.0` (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`), and pin every `uses:` in both workflows to the full 40-char SHA with the tag as a trailing comment. Verify `grep -hn 'uses:' .github/workflows/*.yml` shows only 40-char SHAs with `# vX` comments and both files still parse. The Product Owner updates Settings -> Actions -> General (allow list) to permit the pinned refs (or a wildcard); do not tick until they confirm
 - [x] 5.2 Add `.github/dependabot.yml` for the `github-actions` ecosystem (weekly) and verify it parses as YAML and `ecosystem: github-actions` covers `/`
 - [x] 5.3 Set `persist-credentials: false` on the checkout in `ci.yml` only (the release job's version-sync step needs the credentials) and verify with `grep -n persist-credentials .github/workflows/*.yml`
-- [ ] 5.4 Verify the pinned `CI` run on the PR starts jobs (not `startup_failure`) and is green: `gh run list --workflow ci.yml --limit 1` shows `completed success`
+- [x] 5.4 Verify the pinned `CI` run on the PR starts jobs (not `startup_failure`) and is green: `gh run list --workflow ci.yml --limit 1` shows `completed success`
 
 ## Workflow follow-up
 
