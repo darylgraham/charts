@@ -23,4 +23,61 @@ entries:
     urls:
     - https://github.com/darylgraham/charts/releases/download/home-information-0.1.1/home-information-0.1.1.tgz
     version: 0.1.1
-generated: "2026-06-18T04:26:04.106038267Z"
+  outline:
+  - apiVersion: v2
+    appVersion: 0.84.0
+    created: "2026-11-24T00:11:20.254174567Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.4
+    - condition: redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 21.1.6
+    - condition: minio.enabled
+      name: minio
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.0.10
+    - condition: dex.enabled
+      name: dex
+      repository: https://charts.dexidp.io
+      version: 0.23.0
+    description: The outline helm chart to deploy outline in kubernetes clusters.
+    digest: 3e8f13925899811bdf3f8b6588604fa39bbe717dd4107ad91a2354950672429b
+    home: https://getoutline.com
+    keywords:
+    - outline
+    - wiki
+    - helm
+    - chart
+    - kubernetes
+    - s3
+    - minio
+    - postgresql
+    - mongodb
+    - knowledge
+    maintainers:
+    - email: liam@liam.sh
+      name: lrstanley
+      url: https://liam.sh
+    name: outline
+    sources:
+    - https://github.com/lrstanley/helm-charts
+    urls:
+    - https://github.com/darylgraham/charts/releases/download/outline-1.10.0/outline-1.10.0.tgz
+    version: 1.10.0
+  prometheus-pve-exporter:
+  - apiVersion: v2
+    appVersion: 3.11.0
+    created: "2026-11-24T00:11:20.417624849Z"
+    description: A Helm chart for deploying prometheus-pve-exporter, a Prometheus
+      exporter for Proxmox VE
+    digest: f2c9d6663062c6dd0c035c4fe54121d721522206e7e803fc8a2b72efe1066c2c
+    name: prometheus-pve-exporter
+    type: application
+    urls:
+    - https://github.com/darylgraham/charts/releases/download/prometheus-pve-exporter-0.1.0/prometheus-pve-exporter-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-11-24T00:11:20.417635916Z"
