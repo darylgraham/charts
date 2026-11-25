@@ -298,3 +298,8 @@ scrape_configs:
 |-----------|-------------|---------|
 | `livenessProbe` | Liveness probe for the exporter container | `GET /` on port `http`, delay 5s, period 10s |
 | `readinessProbe` | Readiness probe for the exporter container | `GET /` on port `http`, delay 5s, period 10s |
+
+
+## Dashboard
+
+Use with the [Proxmox via Prometheus](https://grafana.com/grafana/dashboards/10347-proxmox-via-prometheus/) dashboard on Grafana.
